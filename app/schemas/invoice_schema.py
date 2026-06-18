@@ -20,7 +20,19 @@ class InvoiceResponse(BaseModel):
     fileType: str
     uploadStatus: str
     processingStatus: str
-    uploadedAt: datetime.datetime
+    uploadedAt: datetime.datetime | None
+
+
+class PaginationMeta(BaseModel):
+    page: int
+    limit: int
+    total_records: int
+    total_pages: int
+
+
+class InvoiceListResponse(BaseModel):
+    invoices: list[InvoiceResponse]
+    pagination: PaginationMeta
 
 
 class InvoiceCreate(BaseModel):

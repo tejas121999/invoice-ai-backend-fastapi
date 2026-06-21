@@ -1,10 +1,15 @@
-from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, File, Depends
-from requests import session
-from sqlalchemy.orm import Session
+from unittest import result
 
+from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, File, Depends
+from sqlalchemy.orm import Session
 from app.core.database import get_db
 from app.services.invoice_service import (
-    upload_invoice_service, get_invoice_services, list_invoice_service)
+    upload_invoice_service,
+    get_invoice_services,
+    list_invoice_service,
+    get_invoice_result_services,
+    process_invoice_service
+)
 from app.schemas.invoice_schema import (
     InvoiceListResponse, InvoiceUploadResponse, InvoiceResponse
 )
@@ -54,3 +59,58 @@ def get_invoice(invoice_id: int, db: Session = Depends(get_db)):
     if invoice is None:
         raise HTTPException(status_code=404, detail="Invoice not found")
     return invoice
+
+
+@router.get("/{invoice_id}/result")
+def get_invoice_result(
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+    result = get_invoice_result_services(db, invoice_id)
+    print("result", result)
+    invoice = result["invoice"]
+    extracted_data = result["extracted_data"]
+
+    return {
+        "success": True,
+        "message": "Invoice result fetched successfully.",
+        "data": {
+            "invoiceId": invoice.id,
+            "status": invoice.processingStatus,  # or processingStatus value like "processed"
+            "fileName": invoice.fileName,
+            "filePath": invoice.filePath,
+            "uploadedAt": invoice.uploadedAt,
+            "processedAt": extracted_data.updatedAt,
+            "rawText": invoice.rawText,
+            "fields": {
+                "invoiceNumber": extracted_data.invoiceNumber,
+                "vendorName": extracted_data.vendorName,
+                "invoiceDate": extracted_data.invoiceDate,
+                "dueDate": extracted_data.dueDate,
+                "subtotal": extracted_data.subtotal,
+                "taxAmount": extracted_data.taxAmount,
+                "totalAmount": extracted_data.totalAmount,
+                "currency": extracted_data.currency
+            },
+            "confidence": extracted_data.confidenceJson,  # Make sure this is parsed JSON
+            "reviewedFieldsJson": extracted_data.extractedFieldsJson or {},
+            "isReviewed": extracted_data.isReviewed
+        }
+    }
+
+
+@router.post("/{invoice_id}/process")
+async def process_invoice(
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+    result = await process_invoice_service(
+        db=db,
+        invoice_id=invoice_id
+    )
+
+    return {
+        "success": True,
+        "message": "Invoice process successfully.",
+        "data": result
+    }

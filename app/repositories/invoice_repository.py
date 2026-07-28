@@ -1,5 +1,6 @@
-from datetime import datetime, timezone
-from locale import normalize
+from datetime import datetime, timezone, date
+from decimal import Decimal
+from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.models.invoice import Invoice
 from app.models.extracted_invoice import ExtractedInvoiceData
@@ -67,7 +68,7 @@ def save_extract_result(db: Session, invoice_id: int, extraction_data: dict):
     }
 
     if existing_extraction:
-        for key, value in extracted_payload.item():
+        for key, value in extracted_payload.items():
             setattr(existing_extraction, key, value)
     else:
         existing_extraction = ExtractedInvoiceData(**extracted_payload)
@@ -101,6 +102,88 @@ def get_all_invoices(db: Session, skip: int = 0, limit: int = 10):
         .limit(limit)
         .all()
     )
+
+
+def _to_json_safe(value):
+    if isinstance(value, (datetime, date)):
+        return value.isoformat()
+    if isinstance(value, Decimal):
+        return float(value)
+    if isinstance(value, dict):
+        return {k: _to_json_safe(v) for k, v in value.items()}
+    if isinstance(value, list):
+        return [_to_json_safe(v) for v in value]
+    return value
+
+
+def update_invoice_review(
+        db: Session,
+        invoice_id: int,
+        review_data: dict,
+        reviewed_by: int):
+
+    invoice = get_invoice_by_id(db, invoice_id)
+    if not invoice:
+        return None
+
+    extracted_data = get_extracted_invoice_data_by_invoice_id(
+        db=db,
+        invoice_id=invoice_id
+    )
+
+    if not extracted_data:
+        return None
+
+    reviewed_fields = {
+        "invoiceNumber": review_data.get("invoiceNumber"),
+        "vendorName": review_data.get("vendorName"),
+        "invoiceDate": review_data.get("invoiceDate"),
+        "dueDate": review_data.get("dueDate"),
+        "subtotal": review_data.get("subtotal"),
+        "taxAmount": review_data.get("taxAmount"),
+        "totalAmount": review_data.get("totalAmount"),
+        "currency": review_data.get("currency")
+    }
+    reviewed_fields_json = {
+        key: _to_json_safe(value)
+        for key, value in reviewed_fields.items()
+    }
+
+    try:
+        now = datetime.now(timezone.utc)
+        # save the final reviewed values separately
+        extracted_data.reviewedFieldsJson = reviewed_fields_json
+        extracted_data.reviewedData = reviewed_fields_json
+        extracted_data.isReviewed = True
+        extracted_data.reviewedBy = reviewed_by
+        extracted_data.updatedAt = now
+
+        # Also update structured columns with the corrected values.
+        extracted_data.invoiceNumber = reviewed_fields.get("invoiceNumber")
+        extracted_data.vendorName = reviewed_fields.get("vendorName")
+        extracted_data.invoiceDate = reviewed_fields.get("invoiceDate")
+        extracted_data.dueDate = reviewed_fields.get("dueDate")
+        extracted_data.subtotal = reviewed_fields.get("subtotal")
+        extracted_data.taxAmount = reviewed_fields.get("taxAmount")
+        extracted_data.totalAmount = reviewed_fields.get("totalAmount")
+        extracted_data.currency = reviewed_fields.get("currency")
+
+        invoice.processingStatus = "Reviewed"
+        invoice.updatedAt = now
+        invoice.reviewedAt = now
+
+        db.commit()
+        db.refresh(invoice)
+        db.refresh(extracted_data)
+
+        return {
+            "invoice": invoice,
+            "extracted_data": extracted_data
+        }
+
+    except SQLAlchemyError:
+        db.rollback()
+        return
 
 
 def count_invoice(db: Session):

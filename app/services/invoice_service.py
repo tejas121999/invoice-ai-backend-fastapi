@@ -9,7 +9,8 @@ from app.repositories.invoice_repository import (
     count_invoice,
     get_invoice_by_id,
     get_extracted_invoice_data_by_invoice_id,
-    save_extract_result
+    save_extract_result,
+    update_invoice_review
 )
 from app.services.python_ocr_client_service import extract_invoice_from_python_service
 
@@ -117,3 +118,67 @@ async def process_invoice_service(db: Session, invoice_id: int):
         "invoiceId": invoice.id,
         "processingStatus": "process"
     }
+
+
+def review_invoice_service(db: Session, invoice_id: int, review_data: dict):
+    invoice = get_invoice_by_id(db, invoice_id)
+
+    if not invoice:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice not found"
+        )
+
+    extract_data = get_extracted_invoice_data_by_invoice_id(
+        db=db, invoice_id=invoice_id)
+
+    if not extract_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice extraction result not found. Please process the invoice first."
+        )
+
+    if invoice.processingStatus not in ["Processed", "Reviewed"]:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Invoice must be processed before it can be reviewed."
+        )
+
+    invoice_date = review_data.get("invoiceDate")
+    due_date = review_data.get("dueDate")
+
+    if invoice_date and due_date and due_date < invoice_date:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Due date cannot be earlier than invoice date."
+        )
+
+    subtotal = review_data.get("subtotal")
+    tax_amount = review_data.get("taxAmount")
+    total_amount = review_data.get("totalAmount")
+
+    if (
+        subtotal is not None
+        and tax_amount is not None
+        and total_amount is not None
+        and subtotal + tax_amount != total_amount
+    ):
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Subtotal plus tax amount must equal total amount."
+        )
+
+    result = update_invoice_review(
+        db=db,
+        invoice_id=invoice_id,
+        review_data=review_data,
+        reviewed_by=review_data.get("reviewedBy")
+    )
+
+    if not result:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Failed to update invoice review."
+        )
+
+    return result

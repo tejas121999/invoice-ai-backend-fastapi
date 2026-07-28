@@ -3,15 +3,17 @@ from unittest import result
 from fastapi import APIRouter, Form, HTTPException, Query, UploadFile, File, Depends
 from sqlalchemy.orm import Session
 from app.core.database import get_db
+from app.models import invoice
 from app.services.invoice_service import (
     upload_invoice_service,
     get_invoice_services,
     list_invoice_service,
     get_invoice_result_services,
-    process_invoice_service
+    process_invoice_service,
+    review_invoice_service
 )
 from app.schemas.invoice_schema import (
-    InvoiceListResponse, InvoiceUploadResponse, InvoiceResponse
+    InvoiceListResponse, InvoiceReviewRequest, InvoiceReviewResponse, InvoiceUploadResponse, InvoiceResponse
 )
 
 
@@ -95,6 +97,36 @@ def get_invoice_result(
             "confidence": extracted_data.confidenceJson,  # Make sure this is parsed JSON
             "reviewedFieldsJson": extracted_data.extractedFieldsJson or {},
             "isReviewed": extracted_data.isReviewed
+        }
+    }
+
+
+@router.put("/{invoice_id}/review", response_model=InvoiceReviewResponse)
+def review_invoice(
+    invoice_id: int,
+    payload: InvoiceReviewRequest,
+    db: Session = Depends(get_db)
+):
+
+    result = review_invoice_service(
+        db=db,
+        invoice_id=invoice_id,
+        review_data=payload.model_dump()
+    )
+
+    invoice = result["invoice"]
+    extracted_data = result["extracted_data"]
+
+    return {
+        "success": True,
+        "message": "Invoice reviewed successfully.",
+        "data": {
+            "invoiceId": invoice.id,
+            "status": invoice.processingStatus,
+            "reviewedFieldsJson": extracted_data.reviewedFieldsJson or {},
+            "isReviewed": extracted_data.isReviewed,
+            "reviewedBy": extracted_data.reviewedBy,
+            "reviewedAt": extracted_data.updatedAt
         }
     }
 

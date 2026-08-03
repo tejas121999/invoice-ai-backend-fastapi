@@ -1,7 +1,7 @@
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from starlette import status
-
+from sqlalchemy.exc import SQLAlchemyError
 from app.services.file_upload_service import save_invoice_file
 from app.services.audit_service import save_audit_log
 from app.repositories.invoice_repository import (
@@ -13,7 +13,11 @@ from app.repositories.invoice_repository import (
     save_extract_result,
     update_invoice_review
 )
-from app.services.python_ocr_client_service import extract_invoice_from_python_service
+from app.services.invoice_status_service import change_invoice_status
+from app.utils.invoice_status import InvoiceStatus
+from app.services.audit_service import save_audit_log
+from app.schemas.extraction_schema import ExtractionRequest
+from app.services.extraction_service import extract_invoice
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -25,31 +29,36 @@ async def upload_invoice_service(
     uploadedBy: int | None = None
 ):
     file_data = await save_invoice_file(file)
+    try:
+        invoice = create_invoice_record(
+            db=db,
+            file_data=file_data,
+            uploadedBy=uploadedBy
+        )
 
-    invoice = create_invoice_record(
-        db=db,
-        file_data=file_data,
-        uploadedBy=uploadedBy
-    )
+        save_audit_log(
+            db=db,
+            entity="Invoice",
+            entity_id=invoice.id,
+            action="CREATE",
+            user_id=uploadedBy,
+            old_data={},
+            new_data={
+                "fileName": invoice.fileName,
+                "filePath": invoice.filePath,
+                "uploadStatus": invoice.uploadStatus,
+                "processingStatus": invoice.processingStatus
+            }
+        )
 
-    save_audit_log(
-        db=db,
-        entity="Invoice",
-        entity_id=invoice.id,
-        action="CREATE",
-        user_id=uploadedBy,
-        old_data={},
-        new_data={
-            "fileName": invoice.fileName,
-            "filePath": invoice.filePath,
-            "uploadStatus": invoice.uploadStatus,
-            "processingStatus": invoice.processingStatus
-        }
-    )
+        db.commit()
+        db.refresh(invoice)
 
-    db.commit()
+        return invoice
 
-    return invoice
+    except SQLAlchemyError:
+        db.rollback()
+        raise
 
 
 def get_invoice_services(db: Session, invoice_id: int):
@@ -107,11 +116,43 @@ def get_invoice_result_services(db: Session, invoice_id: int):
     }
 
 
+async def mark_invoice_processing_failed(
+    db: Session,
+    invoice_id: int,
+    user_id: int | None,
+    reason: str
+) -> None:
+    failed_invoice = get_invoice_by_id(
+        db=db,
+        invoice_id=invoice_id
+    )
+
+    if not failed_invoice:
+        return
+
+    try:
+        change_invoice_status(
+            db=db,
+            invoice=failed_invoice,
+            new_status=InvoiceStatus.FAILED,
+            user_id=user_id,
+            reason=reason
+        )
+
+        db.commit()
+
+    except Exception:
+        db.rollback()
+
+
 async def process_invoice_service(
     db: Session,
     invoice_id: int
 ):
-    invoice = get_invoice_by_id(db, invoice_id)
+    invoice = get_invoice_by_id(
+        db=db,
+        invoice_id=invoice_id
+    )
 
     if not invoice:
         raise HTTPException(
@@ -119,65 +160,102 @@ async def process_invoice_service(
             detail="Invoice not found"
         )
 
-    old_data = {
-        "processingStatus": invoice.processingStatus,
-        "processedAt": (
-            invoice.processedAt.isoformat()
-            if invoice.processedAt
-            else None
+    user_id = invoice.uploadedBy
+
+    try:
+        # Uploaded/Failed/Processed -> Processing
+        change_invoice_status(
+            db=db,
+            invoice=invoice,
+            new_status=InvoiceStatus.PROCESSING,
+            user_id=user_id,
+            reason="Invoice OCR processing started"
         )
-    }
 
-    payload = {
-        "invoiceId": invoice.id,
-        "filePath": invoice.filePath
-    }
+        extraction_request = ExtractionRequest(
+            invoice_id=invoice.id,
+            file_path=invoice.filePath
+        )
 
-    extraction_response = await extract_invoice_from_python_service(
-        payload
-    )
+        extraction_result = await extract_invoice(
+            extraction_request
+        )
 
-    saved_result = save_extract_result(
-        db=db,
-        invoice_id=invoice.id,
-        extraction_data=extraction_response
-    )
+        extraction_response = extraction_result.model_dump(
+            by_alias=True
+        )
 
-    if not saved_result:
+        saved_result = save_extract_result(
+            db=db,
+            invoice_id=invoice.id,
+            extraction_data=extraction_response
+        )
+
+        if not saved_result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Invoice extraction result could not be saved."
+            )
+
+        extraction_data = extraction_response["data"]
+
+        # Processing -> Processed
+        change_invoice_status(
+            db=db,
+            invoice=invoice,
+            new_status=InvoiceStatus.PROCESSED,
+            user_id=user_id,
+            reason="Invoice OCR extraction completed successfully"
+        )
+
+        save_audit_log(
+            db=db,
+            entity="Invoice",
+            entity_id=invoice.id,
+            action="PROCESS",
+            user_id=user_id,
+            old_data={},
+            new_data={
+                "processingStatus": InvoiceStatus.PROCESSED.value,
+                "rawText": extraction_data.get("rawText", ""),
+                "fields": extraction_data.get("fields", {}),
+                "confidence": extraction_data.get("confidence", {}),
+                "errors": extraction_data.get("errors", [])
+            }
+        )
+
+        db.commit()
+        db.refresh(invoice)
+
+        return {
+            "invoiceId": invoice.id,
+            "processingStatus": invoice.processingStatus
+        }
+
+    except HTTPException:
+        db.rollback()
+        await mark_invoice_processing_failed(
+            db=db,
+            invoice_id=invoice_id,
+            user_id=user_id,
+            reason="Invoice processing failed"
+        )
+        raise
+
+    except Exception as exc:
+        db.rollback()
+
+        await mark_invoice_processing_failed(
+            db=db,
+            invoice_id=invoice_id,
+            user_id=user_id,
+            reason=str(exc)
+        )
+
         raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invoice extraction result could not be saved."
-        )
-
-    extraction_data = extraction_response.get(
-        "data",
-        extraction_response
-    )
-
-    new_data = {
-        "processingStatus": "Processed",
-        "rawText": extraction_data.get("rawText", ""),
-        "fields": extraction_data.get("fields", {}),
-        "confidence": extraction_data.get("confidence", {})
-    }
-
-    save_audit_log(
-        db=db,
-        entity="Invoice",
-        entity_id=invoice.id,
-        action="PROCESS",
-        user_id=invoice.uploadedBy,
-        old_data=old_data,
-        new_data=new_data
-    )
-
-    # Required because save_audit_log only adds the record.
-    db.commit()
-
-    return {
-        "invoiceId": invoice.id,
-        "processingStatus": "Processed"
-    }
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invoice processing failed."
+        ) from exc
 
 
 def review_invoice_service(
@@ -201,10 +279,16 @@ def review_invoice_service(
     if not extract_data:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invoice extraction result not found. Please process the invoice first."
+            detail=(
+                "Invoice extraction result not found. "
+                "Please process the invoice first."
+            )
         )
 
-    if invoice.processingStatus not in ["Processed", "Reviewed"]:
+    if invoice.processingStatus not in [
+        InvoiceStatus.PROCESSED.value,
+        InvoiceStatus.REVIEWED.value
+    ]:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="Invoice must be processed before it can be reviewed."
@@ -234,49 +318,87 @@ def review_invoice_service(
             detail="Subtotal plus tax amount must equal total amount."
         )
 
-    # Capture existing data before updating.
+    reviewed_by = review_data.get("reviewedBy")
+
     old_data = {
         "processingStatus": invoice.processingStatus,
         "reviewFields": get_invoice_review_snapshot(extract_data)
     }
 
-    result = update_invoice_review(
-        db=db,
-        invoice_id=invoice_id,
-        review_data=review_data,
-        reviewed_by=review_data.get("reviewedBy")
-    )
+    try:
+        # Update reviewed invoice fields.
+        # This repository function should use db.flush(), not db.commit().
+        result = update_invoice_review(
+            db=db,
+            invoice_id=invoice_id,
+            review_data=review_data,
+            reviewed_by=reviewed_by
+        )
 
-    if not result:
+        if not result:
+            raise HTTPException(
+                status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+                detail="Failed to update invoice review."
+            )
+
+        updated_invoice = result["invoice"]
+        updated_extract_data = result["extracted_data"]
+
+        # Processed -> Reviewed.
+        # If it is already Reviewed, change_invoice_status() should return
+        # without creating another status transition.
+        change_invoice_status(
+            db=db,
+            invoice=updated_invoice,
+            new_status=InvoiceStatus.REVIEWED,
+            user_id=reviewed_by,
+            reason="Invoice fields reviewed and saved"
+        )
+
+        new_data = {
+            "processingStatus": updated_invoice.processingStatus,
+            "reviewFields": get_invoice_review_snapshot(
+                updated_extract_data
+            )
+        }
+
+        # Business-action audit log.
+        save_audit_log(
+            db=db,
+            entity="Invoice",
+            entity_id=invoice_id,
+            action="REVIEW",
+            user_id=reviewed_by,
+            old_data=old_data,
+            new_data=new_data
+        )
+
+        # Commit:
+        # 1. Reviewed field updates
+        # 2. Status change
+        # 3. STATUS_CHANGE audit
+        # 4. REVIEW audit
+        db.commit()
+
+        db.refresh(updated_invoice)
+        db.refresh(updated_extract_data)
+
+        return {
+            "invoice": updated_invoice,
+            "extracted_data": updated_extract_data
+        }
+
+    except HTTPException:
+        db.rollback()
+        raise
+
+    except Exception as exc:
+        db.rollback()
+
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
-            detail="Failed to update invoice review."
-        )
-
-    updated_invoice = result["invoice"]
-    updated_extract_data = result["extracted_data"]
-
-    new_data = {
-        "processingStatus": updated_invoice.processingStatus,
-        "reviewFields": get_invoice_review_snapshot(
-            updated_extract_data
-        )
-    }
-
-    save_audit_log(
-        db=db,
-        entity="Invoice",
-        entity_id=invoice_id,
-        action="REVIEW",
-        user_id=review_data.get("reviewedBy"),
-        old_data=old_data,
-        new_data=new_data
-    )
-
-    # Required if save_audit_log only calls db.add().
-    db.commit()
-
-    return result
+            detail="Failed to save invoice review."
+        ) from exc
 
 
 def make_json_serializable(value: Any):

@@ -4,6 +4,7 @@ from sqlalchemy.exc import SQLAlchemyError
 from sqlalchemy.orm import Session
 from app.models.invoice import Invoice
 from app.models.extracted_invoice import ExtractedInvoiceData
+from app.utils.invoice_status import InvoiceStatus
 
 
 def create_invoice_record(db: Session, file_data: dict, uploadedBy: int | None = None):
@@ -12,13 +13,12 @@ def create_invoice_record(db: Session, file_data: dict, uploadedBy: int | None =
         filePath=file_data["filePath"],
         fileType=file_data["fileType"],
         uploadStatus="uploaded",
-        processingStatus="pending",
+        processingStatus=InvoiceStatus.UPLOADED.value,
         uploadedBy=uploadedBy
     )
 
     db.add(invoice)
-    db.commit()
-    db.refresh(invoice)
+    db.flush()  # Flush to get the invoice ID
 
     return invoice
 
@@ -35,48 +35,74 @@ def get_extracted_invoice_data_by_invoice_id(db: Session, invoice_id: int):
     )
 
 
-def save_extract_result(db: Session, invoice_id: int, extraction_data: dict):
+def save_extract_result(
+    db: Session,
+    invoice_id: int,
+    extraction_data: dict
+):
     invoice = get_invoice_by_id(db, invoice_id)
 
     if not invoice:
         return None
 
-    normalized = normalization_extraction_payload(extraction_data)
+    normalized = normalization_extraction_payload(
+        extraction_data
+    )
 
-    invoice.processingStatus = "Processed"
-    invoice.processedAt = datetime.now(timezone.utc)
     invoice.rawText = normalized["rawText"]
+    invoice.processedAt = datetime.now(timezone.utc)
 
-    existing_extraction = get_extracted_invoice_data_by_invoice_id(
-        db, invoice_id)
+    existing_extraction = (
+        get_extracted_invoice_data_by_invoice_id(
+            db=db,
+            invoice_id=invoice_id
+        )
+    )
 
     extracted_payload = {
         "invoiceId": invoice_id,
-        "invoiceNumber": normalized["fields"].get("invoiceNumber"),
-        "vendorName": normalized["fields"].get("vendorName"),
-        "invoiceDate": normalized["fields"].get("invoiceDate"),
-        "dueDate": normalized["fields"].get("dueDate"),
-        "subtotal": normalized["fields"].get("subtotal"),
-        "taxAmount": normalized["fields"].get("taxAmount"),
-        "totalAmount": normalized["fields"].get("totalAmount"),
-        "currency": normalized["fields"].get("currency"),
+        "invoiceNumber": normalized["fields"].get(
+            "invoiceNumber"
+        ),
+        "vendorName": normalized["fields"].get(
+            "vendorName"
+        ),
+        "invoiceDate": normalized["fields"].get(
+            "invoiceDate"
+        ),
+        "dueDate": normalized["fields"].get(
+            "dueDate"
+        ),
+        "subtotal": normalized["fields"].get(
+            "subtotal"
+        ),
+        "taxAmount": normalized["fields"].get(
+            "taxAmount"
+        ),
+        "totalAmount": normalized["fields"].get(
+            "totalAmount"
+        ),
+        "currency": normalized["fields"].get(
+            "currency"
+        ),
         "extractedFieldsJson": normalized["fields"],
         "confidenceJson": normalized["confidence"],
         "reviewedFieldsJson": {},
         "isReviewed": False,
-        "reviewedBy": None,
+        "reviewedBy": None
     }
 
     if existing_extraction:
         for key, value in extracted_payload.items():
             setattr(existing_extraction, key, value)
     else:
-        existing_extraction = ExtractedInvoiceData(**extracted_payload)
+        existing_extraction = ExtractedInvoiceData(
+            **extracted_payload
+        )
         db.add(existing_extraction)
 
-    db.commit()
-    db.refresh(invoice)
-    db.refresh(existing_extraction)
+    db.add(invoice)
+    db.flush()
 
     return {
         "invoice": invoice,
@@ -117,12 +143,14 @@ def _to_json_safe(value):
 
 
 def update_invoice_review(
-        db: Session,
-        invoice_id: int,
-        review_data: dict,
-        reviewed_by: int):
+    db: Session,
+    invoice_id: int,
+    review_data: dict,
+    reviewed_by: int
+):
 
     invoice = get_invoice_by_id(db, invoice_id)
+
     if not invoice:
         return None
 
@@ -144,47 +172,51 @@ def update_invoice_review(
         "totalAmount": review_data.get("totalAmount"),
         "currency": review_data.get("currency")
     }
+
     reviewed_fields_json = {
         key: _to_json_safe(value)
         for key, value in reviewed_fields.items()
     }
 
-    try:
-        now = datetime.now(timezone.utc)
-        # save the final reviewed values separately
-        extracted_data.reviewedFieldsJson = reviewed_fields_json
-        extracted_data.reviewedData = reviewed_fields_json
-        extracted_data.isReviewed = True
-        extracted_data.reviewedBy = reviewed_by
-        extracted_data.updatedAt = now
+    now = datetime.now(timezone.utc)
 
-        # Also update structured columns with the corrected values.
-        extracted_data.invoiceNumber = reviewed_fields.get("invoiceNumber")
-        extracted_data.vendorName = reviewed_fields.get("vendorName")
-        extracted_data.invoiceDate = reviewed_fields.get("invoiceDate")
-        extracted_data.dueDate = reviewed_fields.get("dueDate")
-        extracted_data.subtotal = reviewed_fields.get("subtotal")
-        extracted_data.taxAmount = reviewed_fields.get("taxAmount")
-        extracted_data.totalAmount = reviewed_fields.get("totalAmount")
-        extracted_data.currency = reviewed_fields.get("currency")
+    extracted_data.reviewedFieldsJson = reviewed_fields_json
+    extracted_data.reviewedData = reviewed_fields_json
+    extracted_data.isReviewed = True
+    extracted_data.reviewedBy = reviewed_by
+    extracted_data.updatedAt = now
 
-        invoice.processingStatus = "Reviewed"
-        invoice.updatedAt = now
-        invoice.reviewedAt = now
+    extracted_data.invoiceNumber = reviewed_fields.get("invoiceNumber")
+    extracted_data.vendorName = reviewed_fields.get("vendorName")
+    extracted_data.invoiceDate = reviewed_fields.get("invoiceDate")
+    extracted_data.dueDate = reviewed_fields.get("dueDate")
+    extracted_data.subtotal = reviewed_fields.get("subtotal")
+    extracted_data.taxAmount = reviewed_fields.get("taxAmount")
+    extracted_data.totalAmount = reviewed_fields.get("totalAmount")
+    extracted_data.currency = reviewed_fields.get("currency")
 
-        db.commit()
-        db.refresh(invoice)
-        db.refresh(extracted_data)
+    db.add(extracted_data)
+    db.flush()
 
-        return {
-            "invoice": invoice,
-            "extracted_data": extracted_data
-        }
-
-    except SQLAlchemyError:
-        db.rollback()
-        return
+    return {
+        "invoice": invoice,
+        "extracted_data": extracted_data
+    }
 
 
 def count_invoice(db: Session):
     return db.query(Invoice).count()
+
+
+def update_invoice_status(
+    db: Session,
+    invoice: Invoice,
+    new_status: str,
+) -> Invoice:
+    invoice.processingStatus = new_status
+    invoice.updatedAt = datetime.now(timezone.utc)
+
+    db.add(invoice)
+    db.flush()
+
+    return invoice

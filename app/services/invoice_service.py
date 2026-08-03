@@ -3,6 +3,7 @@ from sqlalchemy.orm import Session
 from starlette import status
 
 from app.services.file_upload_service import save_invoice_file
+from app.services.audit_service import save_audit_log
 from app.repositories.invoice_repository import (
     create_invoice_record,
     get_all_invoices,
@@ -13,6 +14,9 @@ from app.repositories.invoice_repository import (
     update_invoice_review
 )
 from app.services.python_ocr_client_service import extract_invoice_from_python_service
+from datetime import date, datetime
+from decimal import Decimal
+from typing import Any
 
 
 async def upload_invoice_service(
@@ -27,6 +31,23 @@ async def upload_invoice_service(
         file_data=file_data,
         uploadedBy=uploadedBy
     )
+
+    save_audit_log(
+        db=db,
+        entity="Invoice",
+        entity_id=invoice.id,
+        action="CREATE",
+        user_id=uploadedBy,
+        old_data={},
+        new_data={
+            "fileName": invoice.fileName,
+            "filePath": invoice.filePath,
+            "uploadStatus": invoice.uploadStatus,
+            "processingStatus": invoice.processingStatus
+        }
+    )
+
+    db.commit()
 
     return invoice
 
@@ -86,7 +107,10 @@ def get_invoice_result_services(db: Session, invoice_id: int):
     }
 
 
-async def process_invoice_service(db: Session, invoice_id: int):
+async def process_invoice_service(
+    db: Session,
+    invoice_id: int
+):
     invoice = get_invoice_by_id(db, invoice_id)
 
     if not invoice:
@@ -95,12 +119,23 @@ async def process_invoice_service(db: Session, invoice_id: int):
             detail="Invoice not found"
         )
 
+    old_data = {
+        "processingStatus": invoice.processingStatus,
+        "processedAt": (
+            invoice.processedAt.isoformat()
+            if invoice.processedAt
+            else None
+        )
+    }
+
     payload = {
         "invoiceId": invoice.id,
         "filePath": invoice.filePath
     }
 
-    extraction_response = await extract_invoice_from_python_service(payload)
+    extraction_response = await extract_invoice_from_python_service(
+        payload
+    )
 
     saved_result = save_extract_result(
         db=db,
@@ -111,16 +146,45 @@ async def process_invoice_service(db: Session, invoice_id: int):
     if not saved_result:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail="Invoice not found."
+            detail="Invoice extraction result could not be saved."
         )
+
+    extraction_data = extraction_response.get(
+        "data",
+        extraction_response
+    )
+
+    new_data = {
+        "processingStatus": "Processed",
+        "rawText": extraction_data.get("rawText", ""),
+        "fields": extraction_data.get("fields", {}),
+        "confidence": extraction_data.get("confidence", {})
+    }
+
+    save_audit_log(
+        db=db,
+        entity="Invoice",
+        entity_id=invoice.id,
+        action="PROCESS",
+        user_id=invoice.uploadedBy,
+        old_data=old_data,
+        new_data=new_data
+    )
+
+    # Required because save_audit_log only adds the record.
+    db.commit()
 
     return {
         "invoiceId": invoice.id,
-        "processingStatus": "process"
+        "processingStatus": "Processed"
     }
 
 
-def review_invoice_service(db: Session, invoice_id: int, review_data: dict):
+def review_invoice_service(
+    db: Session,
+    invoice_id: int,
+    review_data: dict
+):
     invoice = get_invoice_by_id(db, invoice_id)
 
     if not invoice:
@@ -130,7 +194,9 @@ def review_invoice_service(db: Session, invoice_id: int, review_data: dict):
         )
 
     extract_data = get_extracted_invoice_data_by_invoice_id(
-        db=db, invoice_id=invoice_id)
+        db=db,
+        invoice_id=invoice_id
+    )
 
     if not extract_data:
         raise HTTPException(
@@ -168,6 +234,12 @@ def review_invoice_service(db: Session, invoice_id: int, review_data: dict):
             detail="Subtotal plus tax amount must equal total amount."
         )
 
+    # Capture existing data before updating.
+    old_data = {
+        "processingStatus": invoice.processingStatus,
+        "reviewFields": get_invoice_review_snapshot(extract_data)
+    }
+
     result = update_invoice_review(
         db=db,
         invoice_id=invoice_id,
@@ -181,4 +253,64 @@ def review_invoice_service(db: Session, invoice_id: int, review_data: dict):
             detail="Failed to update invoice review."
         )
 
+    updated_invoice = result["invoice"]
+    updated_extract_data = result["extracted_data"]
+
+    new_data = {
+        "processingStatus": updated_invoice.processingStatus,
+        "reviewFields": get_invoice_review_snapshot(
+            updated_extract_data
+        )
+    }
+
+    save_audit_log(
+        db=db,
+        entity="Invoice",
+        entity_id=invoice_id,
+        action="REVIEW",
+        user_id=review_data.get("reviewedBy"),
+        old_data=old_data,
+        new_data=new_data
+    )
+
+    # Required if save_audit_log only calls db.add().
+    db.commit()
+
     return result
+
+
+def make_json_serializable(value: Any):
+    if isinstance(value, (date, datetime)):
+        return value.isoformat()
+
+    if isinstance(value, Decimal):
+        return float(value)
+
+    if isinstance(value, dict):
+        return {
+            key: make_json_serializable(item)
+            for key, item in value.items()
+        }
+
+    if isinstance(value, list):
+        return [
+            make_json_serializable(item)
+            for item in value
+        ]
+
+    return value
+
+
+def get_invoice_review_snapshot(extract_data) -> dict:
+    return make_json_serializable({
+        "invoiceNumber": extract_data.invoiceNumber,
+        "vendorName": extract_data.vendorName,
+        "invoiceDate": extract_data.invoiceDate,
+        "dueDate": extract_data.dueDate,
+        "subtotal": extract_data.subtotal,
+        "taxAmount": extract_data.taxAmount,
+        "totalAmount": extract_data.totalAmount,
+        "currency": extract_data.currency,
+        "isReviewed": extract_data.isReviewed,
+        "reviewedBy": extract_data.reviewedBy
+    })

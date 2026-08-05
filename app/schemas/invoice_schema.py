@@ -26,6 +26,21 @@ class InvoiceResponse(BaseModel):
     uploadedAt: Optional[datetime] | None
 
 
+class InvoiceSummaryData(BaseModel):
+    totalInvoices: int
+    uploaded: int
+    processing: int
+    processed: int
+    reviewed: int
+    failed: int
+
+
+class InvoiceSummaryResponse(BaseModel):
+    success: bool
+    message: str
+    data: InvoiceSummaryData
+
+
 class InvoiceReviewRequest(BaseModel):
     invoiceNumber: Optional[str] = Field(default=None, max_length=120)
     vendorName: Optional[str] = Field(default=None, max_length=255)

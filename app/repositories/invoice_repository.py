@@ -5,6 +5,7 @@ from sqlalchemy.orm import Session
 from app.models.invoice import Invoice
 from app.models.extracted_invoice import ExtractedInvoiceData
 from app.utils.invoice_status import InvoiceStatus
+from sqlalchemy import func
 
 
 def create_invoice_record(db: Session, file_data: dict, uploadedBy: int | None = None):
@@ -220,3 +221,14 @@ def update_invoice_status(
     db.flush()
 
     return invoice
+
+
+def get_invoice_status_counts(db: Session):
+    return (
+        db.query(
+            Invoice.processingStatus,
+            func.count(Invoice.id)
+        )
+        .group_by(Invoice.processingStatus)
+        .all()
+    )

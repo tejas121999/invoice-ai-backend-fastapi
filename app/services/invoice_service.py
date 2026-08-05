@@ -11,7 +11,8 @@ from app.repositories.invoice_repository import (
     get_invoice_by_id,
     get_extracted_invoice_data_by_invoice_id,
     save_extract_result,
-    update_invoice_review
+    update_invoice_review,
+    get_invoice_status_counts
 )
 from app.services.invoice_status_service import change_invoice_status
 from app.utils.invoice_status import InvoiceStatus
@@ -436,3 +437,37 @@ def get_invoice_review_snapshot(extract_data) -> dict:
         "isReviewed": extract_data.isReviewed,
         "reviewedBy": extract_data.reviewedBy
     })
+
+
+def get_invoice_summary_service(db: Session):
+    total_invoices = count_invoice(db)
+    status_rows = get_invoice_status_counts(db)
+
+    status_counts = {
+        status_name: count
+        for status_name, count in status_rows
+    }
+
+    return {
+        "totalInvoices": total_invoices,
+        "uploaded": status_counts.get(
+            InvoiceStatus.UPLOADED.value,
+            0
+        ),
+        "processing": status_counts.get(
+            InvoiceStatus.PROCESSING.value,
+            0
+        ),
+        "processed": status_counts.get(
+            InvoiceStatus.PROCESSED.value,
+            0
+        ),
+        "reviewed": status_counts.get(
+            InvoiceStatus.REVIEWED.value,
+            0
+        ),
+        "failed": status_counts.get(
+            InvoiceStatus.FAILED.value,
+            0
+        )
+    }

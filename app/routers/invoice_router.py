@@ -10,10 +10,16 @@ from app.services.invoice_service import (
     list_invoice_service,
     get_invoice_result_services,
     process_invoice_service,
-    review_invoice_service
+    review_invoice_service,
+    get_invoice_summary_service
 )
 from app.schemas.invoice_schema import (
-    InvoiceListResponse, InvoiceReviewRequest, InvoiceReviewResponse, InvoiceUploadResponse, InvoiceResponse
+    InvoiceListResponse,
+    InvoiceReviewRequest,
+    InvoiceReviewResponse,
+    InvoiceUploadResponse,
+    InvoiceResponse,
+    InvoiceSummaryResponse
 )
 
 
@@ -53,6 +59,19 @@ def get_invoices(
     limit: int = Query(10, ge=1, le=100)
 ):
     return list_invoice_service(db, page=page, limit=limit)
+
+
+@router.get("/metrics/summary", response_model=InvoiceSummaryResponse)
+def get_invoice_summary(
+    db: Session = Depends(get_db)
+):
+    summary = get_invoice_summary_service(db)
+
+    return {
+        "success": True,
+        "message": "Invoice summary fetched successfully.",
+        "data": summary
+    }
 
 
 @router.get("/{invoice_id}", response_model=InvoiceResponse)

@@ -21,7 +21,10 @@ from app.schemas.invoice_schema import (
     InvoiceResponse,
     InvoiceSummaryResponse
 )
-
+from app.schemas.feature_schema import InvoiceFeatureResponse
+from app.services.feature_engineering_service import (
+    generate_invoice_features_service
+)
 
 router = APIRouter(
     prefix="/api/invoices",
@@ -163,5 +166,25 @@ async def process_invoice(
     return {
         "success": True,
         "message": "Invoice process successfully.",
+        "data": result
+    }
+
+
+@router.get(
+    "/{invoice_id}/features",
+    response_model=InvoiceFeatureResponse
+)
+def generate_invoice_features(
+    invoice_id: int,
+    db: Session = Depends(get_db)
+):
+    result = generate_invoice_features_service(
+        db=db,
+        invoice_id=invoice_id
+    )
+
+    return {
+        "success": True,
+        "message": "Invoice features generated successfully.",
         "data": result
     }

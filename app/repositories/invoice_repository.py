@@ -232,3 +232,24 @@ def get_invoice_status_counts(db: Session):
         .group_by(Invoice.processingStatus)
         .all()
     )
+
+
+def get_feature_candidate_invoices(
+    db: Session,
+    current_invoice_id: int
+):
+    """
+    Return extracted invoice records except the current invoice.
+
+    Initially, compare against reviewed invoices because reviewed
+    fields are more reliable than raw OCR fields.
+    """
+
+    return (
+        db.query(ExtractedInvoiceData)
+        .filter(
+            ExtractedInvoiceData.invoiceId != current_invoice_id,
+            ExtractedInvoiceData.isReviewed.is_(True)
+        )
+        .all()
+    )

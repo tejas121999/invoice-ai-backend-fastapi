@@ -1,0 +1,146 @@
+from io import BytesIO
+from pathlib import Path
+
+import pymupdf  # type: ignore[import]
+import pytesseract  # type: ignore[import]
+from fastapi import HTTPException
+from PIL import Image, UnidentifiedImageError  # type: ignore[import]
+from starlette import status
+
+from app.core.config import settings
+from app.utils.image_preprocessor import preprocess_image_for_ocr
+
+
+SUPPORTED_IMAGE_EXTENSIONS = {
+    ".jpg",
+    ".jpeg",
+    ".png",
+    ".bmp",
+    ".tif",
+    ".tiff"
+}
+
+
+def configure_tesseract() -> None:
+    if settings.tesseract_cmd:
+        pytesseract.pytesseract.tesseract_cmd = (
+            settings.tesseract_cmd
+        )
+
+
+def run_ocr_on_image(image: Image.Image) -> str:
+    configure_tesseract()
+
+    processed_image = preprocess_image_for_ocr(image)
+
+    text = pytesseract.image_to_string(
+        processed_image,
+        lang=settings.ocr_language,
+        config="--oem 3 --psm 6"
+    )
+
+    return text.strip()
+
+
+def read_image_text(file_path: Path) -> str:
+    try:
+        with Image.open(file_path) as image:
+            return run_ocr_on_image(image)
+
+    except UnidentifiedImageError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded image could not be read."
+        ) from exc
+
+
+def read_pdf_text(file_path: Path) -> str:
+    """
+    First try embedded PDF text.
+
+    If a page contains little or no embedded text, render that page as
+    an image and run OCR.
+    """
+
+    page_texts: list[str] = []
+
+    try:
+        document = pymupdf.open(file_path)
+
+    except Exception as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="The uploaded PDF could not be opened."
+        ) from exc
+
+    try:
+        for page_number, page in enumerate(document, start=1):
+            embedded_text = page.get_text(
+                "text",
+                sort=True
+            ).strip()
+
+            # A digital invoice should normally contain useful text.
+            # Very short text often means it is a scanned PDF.
+            if len(embedded_text) >= 30:
+                page_texts.append(embedded_text)
+                continue
+
+            pixmap = page.get_pixmap(
+                dpi=settings.ocr_pdf_dpi,
+                alpha=False
+            )
+
+            image = Image.open(
+                BytesIO(pixmap.tobytes("png"))
+            )
+
+            ocr_text = run_ocr_on_image(image)
+
+            if not ocr_text:
+                page_texts.append(
+                    f"[Page {page_number}: no text detected]"
+                )
+            else:
+                page_texts.append(ocr_text)
+
+    finally:
+        document.close()
+
+    return "\n\n".join(page_texts).strip()
+
+
+def read_document_text(file_path: str) -> str:
+    path = Path(
+        file_path.replace("\\", "/")
+    )
+
+    if not path.exists():
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=f"Invoice file not found: {file_path}"
+        )
+
+    extension = path.suffix.lower()
+
+    if extension == ".pdf":
+        raw_text = read_pdf_text(path)
+
+    elif extension in SUPPORTED_IMAGE_EXTENSIONS:
+        raw_text = read_image_text(path)
+
+    else:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=(
+                f"Unsupported invoice file type: {extension}"
+            )
+        )
+
+    if not raw_text.strip():
+        raise HTTPException(
+            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            detail="No readable text was found in the invoice."
+        )
+
+    return raw_text

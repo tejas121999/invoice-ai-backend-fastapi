@@ -181,7 +181,6 @@ async def process_invoice_service(
         extraction_result = await extract_invoice(
             extraction_request
         )
-
         extraction_response = extraction_result.model_dump(
             by_alias=True
         )

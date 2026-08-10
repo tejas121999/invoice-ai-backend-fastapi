@@ -1,4 +1,5 @@
 from typing import Any
+
 from pydantic import BaseModel, ConfigDict, Field
 
 
@@ -6,9 +7,7 @@ class ExtractionRequest(BaseModel):
     invoice_id: int = Field(..., alias="invoiceId")
     file_path: str = Field(..., alias="filePath", min_length=1)
 
-    model_config = ConfigDict(
-        populate_by_name=True
-    )
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ExtractionFields(BaseModel):
@@ -39,42 +38,43 @@ class ExtractionFields(BaseModel):
     )
     currency: str | None = None
 
-    model_config = ConfigDict(
-        populate_by_name=True
-    )
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ExtractionConfidence(BaseModel):
-    invoice_number: float | None = Field(
-        default=None,
+    invoice_number: float = Field(
+        default=0.0,
         alias="invoiceNumber"
     )
-    vendor_name: float | None = Field(
-        default=None,
+    vendor_name: float = Field(
+        default=0.0,
         alias="vendorName"
     )
-    invoice_date: float | None = Field(
-        default=None,
+    invoice_date: float = Field(
+        default=0.0,
         alias="invoiceDate"
     )
-    due_date: float | None = Field(
-        default=None,
+    due_date: float = Field(
+        default=0.0,
         alias="dueDate"
     )
-    subtotal: float | None = None
-    tax_amount: float | None = Field(
-        default=None,
+    subtotal: float = 0.0
+    tax_amount: float = Field(
+        default=0.0,
         alias="taxAmount"
     )
-    total_amount: float | None = Field(
-        default=None,
+    total_amount: float = Field(
+        default=0.0,
         alias="totalAmount"
     )
-    currency: float | None = None
+    currency: float = 0.0
 
-    model_config = ConfigDict(
-        populate_by_name=True
-    )
+    model_config = ConfigDict(populate_by_name=True)
+
+
+class ExtractionError(BaseModel):
+    field: str | None = None
+    message: str
 
 
 class ExtractionData(BaseModel):
@@ -82,14 +82,14 @@ class ExtractionData(BaseModel):
     raw_text: str = Field(default="", alias="rawText")
     fields: ExtractionFields
     confidence: ExtractionConfidence
-    errors: list[Any] = Field(default_factory=list)
-
-    model_config = ConfigDict(
-        populate_by_name=True
+    errors: list[ExtractionError | dict[str, Any]] = Field(
+        default_factory=list
     )
+
+    model_config = ConfigDict(populate_by_name=True)
 
 
 class ExtractionResponse(BaseModel):
-    success: bool = True
+    success: bool
     message: str
     data: ExtractionData

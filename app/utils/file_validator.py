@@ -1,11 +1,10 @@
 from fastapi import UploadFile, HTTPException
 
-ALLOWED_EXTENSION = {".pdf", ".jpg", ".jpeg", ".png", ".webp"}
+ALLOWED_EXTENSION = {".pdf", ".jpg", ".jpeg", ".png"}
 ALLOWED_CONTENT_TYPES = {
     "application/pdf",
     "image/jpeg",
-    "image/png",
-    "image/webp"
+    "image/png"
 }
 
 

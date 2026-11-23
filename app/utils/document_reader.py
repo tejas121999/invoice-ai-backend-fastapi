@@ -9,6 +9,12 @@ from starlette import status
 
 from app.core.config import settings
 from app.utils.image_preprocessor import preprocess_image_for_ocr
+from app.utils.invoice_paths import (
+    InvalidInvoicePathError,
+    InvoiceFileAccessError,
+    InvoiceFileNotFoundError,
+    resolve_invoice_path
+)
 
 
 SUPPORTED_IMAGE_EXTENSIONS = {
@@ -47,10 +53,22 @@ def read_image_text(file_path: Path) -> str:
         with Image.open(file_path) as image:
             return run_ocr_on_image(image)
 
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invoice file cannot be accessed."
+        ) from exc
+
     except UnidentifiedImageError as exc:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail="The uploaded image could not be read."
+        ) from exc
+
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invoice file cannot be accessed."
         ) from exc
 
 
@@ -66,6 +84,18 @@ def read_pdf_text(file_path: Path) -> str:
 
     try:
         document = pymupdf.open(file_path)
+
+    except PermissionError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invoice file cannot be accessed."
+        ) from exc
+
+    except OSError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invoice file cannot be accessed."
+        ) from exc
 
     except Exception as exc:
         raise HTTPException(
@@ -111,15 +141,23 @@ def read_pdf_text(file_path: Path) -> str:
 
 
 def read_document_text(file_path: str) -> str:
-    path = Path(
-        file_path.replace("\\", "/")
-    )
-
-    if not path.exists():
+    try:
+        path = resolve_invoice_path(file_path)
+    except InvoiceFileNotFoundError as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
-            detail=f"Invoice file not found: {file_path}"
-        )
+            detail="Invoice file not found."
+        ) from exc
+    except InvoiceFileAccessError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="Invoice file cannot be accessed."
+        ) from exc
+    except InvalidInvoicePathError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc)
+        ) from exc
 
     extension = path.suffix.lower()
 

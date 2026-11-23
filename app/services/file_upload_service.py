@@ -1,5 +1,4 @@
 from pathlib import Path
-import os
 import uuid
 
 import aiofiles
@@ -7,12 +6,13 @@ from fastapi import HTTPException, UploadFile
 
 from app.core.config import settings
 from app.utils.file_validator import validate_invoice_file
+from app.utils.invoice_paths import resolve_invoice_path
 
 
 async def save_invoice_file(file: UploadFile):
     extension = validate_invoice_file(file)
 
-    upload_dir = Path(settings.UPLOAD_DIR)
+    upload_dir = Path(settings.UPLOAD_DIR).resolve()
     upload_dir.mkdir(parents=True, exist_ok=True)
 
     unique_file_name = f"{uuid.uuid4()}{extension}"
@@ -45,8 +45,7 @@ async def save_invoice_file(file: UploadFile):
         return {
             "fileName": unique_file_name,
             "original_name": file.filename,
-            # Store a consistent path such as uploads/invoices/file.pdf
-            "filePath": file_path.as_posix(),
+            "filePath": resolve_invoice_path(file_path).as_posix(),
             "fileType": file.content_type,
             "file_size": total_size
         }

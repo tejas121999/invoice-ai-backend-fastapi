@@ -3,7 +3,8 @@ from decimal import Decimal
 from typing import Optional
 
 from click import Option
-from pydantic import BaseModel, Field, ConfigDict
+from pydantic import BaseModel, Field, ConfigDict, field_serializer
+from app.utils.invoice_paths import invoice_path_for_response
 
 
 class InvoiceUploadResponse(BaseModel):
@@ -15,6 +16,10 @@ class InvoiceUploadResponse(BaseModel):
     uploadStatus: str
     processingStatus: str
 
+    @field_serializer("filePath")
+    def serialize_file_path(self, file_path: str) -> str:
+        return invoice_path_for_response(file_path)
+
 
 class InvoiceResponse(BaseModel):
     id: int
@@ -24,6 +29,10 @@ class InvoiceResponse(BaseModel):
     uploadStatus: str
     processingStatus: str
     uploadedAt: Optional[datetime] | None
+
+    @field_serializer("filePath")
+    def serialize_file_path(self, file_path: str) -> str:
+        return invoice_path_for_response(file_path)
 
 
 class InvoiceSummaryData(BaseModel):

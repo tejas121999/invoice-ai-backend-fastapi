@@ -109,6 +109,11 @@ class FileUploadSizeTests(unittest.IsolatedAsyncioTestCase):
 
             saved_file = Path(upload_dir) / result["fileName"]
             self.assertTrue(saved_file.exists())
+            self.assertTrue(Path(result["filePath"]).is_absolute())
+            self.assertEqual(
+                Path(result["filePath"]),
+                saved_file.resolve()
+            )
             self.assertEqual(saved_file.read_bytes(), b"%PDF-test")
             self.assertEqual(result["fileType"], "application/pdf")
             self.assertEqual(result["file_size"], len(b"%PDF-test"))

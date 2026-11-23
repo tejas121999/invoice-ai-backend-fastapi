@@ -25,6 +25,7 @@ from app.schemas.feature_schema import InvoiceFeatureResponse
 from app.services.feature_engineering_service import (
     generate_invoice_features_service
 )
+from app.utils.invoice_paths import invoice_path_for_response
 
 router = APIRouter(
     prefix="/api/invoices",
@@ -49,7 +50,7 @@ async def upload_invoices(
         "message": "Invoice uploaded successfully",
         "invoiceId": invoice.id,
         "fileName": invoice.fileName,
-        "filePath": invoice.filePath,
+        "filePath": invoice_path_for_response(invoice.filePath),
         "uploadStatus": invoice.uploadStatus,
         "processingStatus": invoice.processingStatus
     }
@@ -102,7 +103,7 @@ def get_invoice_result(
             "invoiceId": invoice.id,
             "status": invoice.processingStatus,  # or processingStatus value like "processed"
             "fileName": invoice.fileName,
-            "filePath": invoice.filePath,
+            "filePath": invoice_path_for_response(invoice.filePath),
             "uploadedAt": invoice.uploadedAt,
             "processedAt": extracted_data.updatedAt,
             "rawText": invoice.rawText,

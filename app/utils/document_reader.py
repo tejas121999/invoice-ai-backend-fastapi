@@ -22,9 +22,9 @@ SUPPORTED_IMAGE_EXTENSIONS = {
 
 
 def configure_tesseract() -> None:
-    if settings.tesseract_cmd:
+    if settings.TESSERACT_CMD:
         pytesseract.pytesseract.tesseract_cmd = (
-            settings.tesseract_cmd
+            settings.TESSERACT_CMD
         )
 
 
@@ -35,7 +35,7 @@ def run_ocr_on_image(image: Image.Image) -> str:
 
     text = pytesseract.image_to_string(
         processed_image,
-        lang=settings.ocr_language,
+        lang=settings.OCR_LANGUAGE,
         config="--oem 3 --psm 6"
     )
 
@@ -87,7 +87,7 @@ def read_pdf_text(file_path: Path) -> str:
                 continue
 
             pixmap = page.get_pixmap(
-                dpi=settings.ocr_pdf_dpi,
+                dpi=settings.OCR_PDF_DPI,
                 alpha=False
             )
 

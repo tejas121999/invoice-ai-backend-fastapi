@@ -23,6 +23,15 @@ DUE_DATE_PATTERNS = [
     r"\bpayment\s*due\s*[:\-]?\s*([0-9A-Za-z,\-\/ ]{6,25})"
 ]
 
+DATE_TOKEN_PATTERN = (
+    r"\b(?:"
+    r"\d{4}[-/]\d{1,2}[-/]\d{1,2}|"
+    r"\d{1,2}[-/]\d{1,2}[-/]\d{2,4}|"
+    r"\d{1,2}[-/ ](?:[A-Za-z]{3,9}|\d{1,2})[-/ ,]+\d{2,4}|"
+    r"[A-Za-z]{3,9}\s+\d{1,2},?\s+\d{4}"
+    r")\b"
+)
+
 SUBTOTAL_PATTERNS = [
     r"\bsub\s*total\s*[:\-]?\s*(?:INR|USD|EUR|Rs\.?|₹|\$|€)?\s*([\d,]+(?:\.\d{1,2})?)"
 ]
@@ -74,6 +83,13 @@ TOTAL_AMOUNT_PATTERNS = [
         r"([\d,]+(?:\.\d{1,2})?)\s*$"
     )
 ]
+
+INLINE_TOTAL_PATTERN = (
+    r"^\s*(?:grand\s+)?total\s*[:\-]?\s*"
+    r"(?:(?:INR|USD|EUR|GBP|Rs\.?|[$€£₹])\s*)?"
+    r"([\d,]+(?:\.\d{1,2})?)"
+    r"(?:\s*(?:INR|USD|EUR|GBP))?\s*$"
+)
 
 VENDOR_LABEL_PATTERNS = [
     r"\bvendor\s+name\s*(?:[:\-]\s*)?(.+)",
@@ -149,6 +165,13 @@ COMPANY_SUFFIX_LINES = {
     "llp",
     "inc",
     "inc."
+}
+
+GENERIC_VENDOR_TITLES = {
+    "invoice",
+    "freelance invoice",
+    "tax invoice",
+    "bill"
 }
 
 TAX_PATTERNS = [
@@ -266,6 +289,15 @@ def clean_vendor_name(value: str) -> str:
     return cleaned.strip(" :-\t")
 
 
+def is_generic_vendor_title(value: str) -> bool:
+    normalized = re.sub(
+        r"[^a-z0-9]+",
+        " ",
+        value.lower()
+    ).strip()
+    return normalized in GENERIC_VENDOR_TITLES
+
+
 def normalize_raw_text(raw_text: str) -> str:
     text = raw_text.replace("\r", "\n")
     text = re.sub(r"[ \t]+", " ", text)
@@ -350,11 +382,23 @@ def parse_date_value(
         return None
 
 
+def extract_date_token(value: str | None) -> str | None:
+    if not value:
+        return None
+
+    match = re.search(DATE_TOKEN_PATTERN, value, flags=re.IGNORECASE)
+    if not match:
+        return None
+
+    return parse_date_value(match.group(0))
+
+
 def extract_invoice_number(
     text: str
 ) -> tuple[str | None, float]:
 
     lines = get_clean_lines(text)
+    found_invoice_number_label = False
 
     for index, line in enumerate(lines):
         normalized = line.lower()
@@ -370,6 +414,7 @@ def extract_invoice_number(
 
         if not matched_label:
             continue
+        found_invoice_number_label = True
 
         position = normalized.find(matched_label)
 
@@ -378,28 +423,66 @@ def extract_invoice_number(
             position + len(matched_label):
         ].strip(" :-")
 
-        candidate_texts = []
+        candidate_texts: list[tuple[str, bool]] = []
 
         if value:
-            candidate_texts.append(value)
+            candidate_texts.append((value, True))
 
         # Invoice value may appear on the next line.
         if index + 1 < len(lines):
             candidate_texts.append(
-                lines[index + 1]
+                (lines[index + 1], False)
             )
 
-        for candidate_text in candidate_texts:
+        for candidate_text, is_inline_value in candidate_texts:
+            if re.search(
+                DATE_TOKEN_PATTERN,
+                candidate_text,
+                flags=re.IGNORECASE
+            ):
+                continue
+
+            email_matches = re.findall(
+                r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+                candidate_text,
+                flags=re.IGNORECASE
+            )
+            text_without_emails = re.sub(
+                r"\b[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}\b",
+                " ",
+                candidate_text,
+                flags=re.IGNORECASE
+            ).strip(" \t,:-")
+            text_without_phones = re.sub(
+                r"(?:\+?\d{1,3}\s*)?\(\d{2,4}\)\s*\d{3,4}[- ]\d{3,4}\b"
+                r"|\b\d{3}[-.]\d{3}[-.]\d{4}\b",
+                " ",
+                text_without_emails
+            ).strip(" \t,:-")
+
+            numeric_candidate = None
+            if re.fullmatch(
+                r"\d{1,12}" if is_inline_value else r"\d{1,4}",
+                text_without_phones
+            ):
+                if is_inline_value or email_matches:
+                    numeric_candidate = text_without_phones
 
             # Example:
             # "N/A RRSC21223308576"
             #
             # Find individual plausible invoice-number tokens.
             candidates = re.findall(
-                r"\b[A-Z0-9][A-Z0-9\-\/]{3,}\b",
-                candidate_text,
+                r"\b(?=[A-Z0-9][A-Z0-9\-\/]{3,}\b)"
+                r"(?=[A-Z0-9\-\/]*[A-Z])"
+                r"(?=[A-Z0-9\-\/]*\d)"
+                r"[A-Z0-9][A-Z0-9\-\/]{3,}\b",
+                text_without_phones,
                 flags=re.IGNORECASE
             )
+
+            if numeric_candidate:
+                candidates.append(numeric_candidate)
 
             valid_candidates = [
                 candidate
@@ -417,6 +500,9 @@ def extract_invoice_number(
                 )
 
                 return best_candidate, 0.95
+
+    if found_invoice_number_label:
+        return None, 0.0
 
     # Original regex fallback
     return find_first_pattern(
@@ -465,10 +551,22 @@ def extract_invoice_date(
     )
 
     if raw_value:
-        parsed = parse_date_value(raw_value)
+        parsed = extract_date_token(raw_value)
 
         if parsed:
             return parsed, confidence
+
+    for index, line in enumerate(lines):
+        normalized_line = line.lower()
+
+        if re.search(r"\b(?:due\s+date|payment\s+due)\b", normalized_line):
+            break
+
+        if re.search(r"\bdate\s*$", normalized_line):
+            if index + 1 < len(lines):
+                parsed = extract_date_token(lines[index + 1])
+                if parsed:
+                    return parsed, 0.90
 
     # Fallback to regex
     raw_value, confidence = find_first_pattern(
@@ -476,7 +574,7 @@ def extract_invoice_date(
         INVOICE_DATE_PATTERNS
     )
 
-    parsed = parse_date_value(raw_value)
+    parsed = extract_date_token(raw_value)
 
     if parsed:
         return parsed, confidence
@@ -496,7 +594,7 @@ def extract_due_date(
     )
 
     if raw_value:
-        parsed = parse_date_value(raw_value)
+        parsed = extract_date_token(raw_value)
 
         if parsed:
             return parsed, confidence
@@ -506,7 +604,7 @@ def extract_due_date(
         DUE_DATE_PATTERNS
     )
 
-    parsed = parse_date_value(raw_value)
+    parsed = extract_date_token(raw_value)
 
     if parsed:
         return parsed, confidence
@@ -557,6 +655,62 @@ def extract_amount_field(
         return None, 0.0
 
     return amount, confidence
+
+
+def extract_total_amount(
+    text: str
+) -> tuple[float | None, float]:
+    amount, confidence = extract_amount_field(
+        text,
+        TOTAL_AMOUNT_PATTERNS
+    )
+    if amount is not None:
+        return amount, confidence
+
+    for line in get_clean_lines(text):
+        match = re.match(
+            INLINE_TOTAL_PATTERN,
+            line,
+            flags=re.IGNORECASE
+        )
+        if match:
+            amount = parse_amount(match.group(1))
+            if amount is not None:
+                return amount, 0.70
+
+    currency_amount_pattern = (
+        r"(?:[$€£₹]\s*|(?:INR|USD|EUR|GBP|Rs\.?)\s*)"
+        r"([\d,]+(?:\.\d{1,2})?)"
+    )
+
+    lines = get_clean_lines(text)
+    for index, line in enumerate(lines):
+        if re.search(
+            r"\b(?:items?|description|quantity|qty|price|tax|amount)\b",
+            line,
+            flags=re.IGNORECASE
+        ):
+            continue
+
+        if not re.search(
+            r"(?:^|[\s:])total\s*:?\s*$",
+            line,
+            flags=re.IGNORECASE
+        ):
+            continue
+
+        for nearby_line in lines[index + 1:index + 3]:
+            matches = re.findall(
+                currency_amount_pattern,
+                nearby_line,
+                flags=re.IGNORECASE
+            )
+            if len(matches) == 1:
+                parsed_amount = parse_amount(matches[0])
+                if parsed_amount is not None:
+                    return parsed_amount, 0.70
+
+    return None, 0.0
 
 
 def extract_currency(
@@ -655,39 +809,73 @@ def extract_vendor_name(
             " ".join(vendor_parts)
         )
 
-        if vendor_name:
+        if vendor_name and not is_generic_vendor_title(vendor_name):
             return vendor_name[:255], 0.95
 
     # Strategy 2:
-    # Find company-like text near the top of the document.
-    for index, line in enumerate(lines[:20]):
-        combined_line = line
-
-        if index + 1 < len(lines):
-            next_line = lines[index + 1].strip()
-
-            if next_line.lower() in COMPANY_SUFFIX_LINES:
-                combined_line = f"{line} {next_line}"
-
-        normalized_line = combined_line.lower()
-
-        if any(
-            keyword in normalized_line
-            for keyword in COMPANY_KEYWORDS
+    # Prefer the first plausible company line in the header, before customer
+    # and address sections.
+    header_lines: list[str] = []
+    for line in lines[:20]:
+        if re.match(
+            r"^(?:bill\s+to|ship\s+to|customer|buyer|"
+            r"client\s+information|client\s+details|"
+            r"customer\s+information|customer\s+details)\b",
+            line,
+            flags=re.IGNORECASE
         ):
-            if not any(
-                excluded in normalized_line
-                for excluded in (
-                    "bill to",
-                    "ship to",
-                    "customer",
-                    "buyer"
-                )
-            ):
-                return (
-                    clean_vendor_name(combined_line)[:255],
-                    0.65
-                )
+            break
+        header_lines.append(line)
+
+    for index, line in enumerate(header_lines):
+        if is_generic_vendor_title(line):
+            continue
+
+        if re.match(
+            r"^(?:vendor|supplier|seller)\s+name\b",
+            line,
+            flags=re.IGNORECASE
+        ):
+            continue
+
+        if re.match(r"^\d", line):
+            break
+
+        if re.match(
+            r"^(?:invoice|date|due date|payment due|items|description)\b",
+            line,
+            flags=re.IGNORECASE
+        ):
+            continue
+
+        if re.search(
+            r"\b(?:street|st\.|avenue|ave\.|road|rd\.|boulevard|"
+            r"blvd|lane|ln\.|drive|dr\.|suite|unit)\b",
+            line,
+            flags=re.IGNORECASE
+        ):
+            break
+
+        if (
+            index + 1 < len(header_lines)
+            and header_lines[index + 1].lower() in COMPANY_SUFFIX_LINES
+        ):
+            line = f"{line} {header_lines[index + 1]}"
+
+        candidate = re.split(
+            r"\s+(?:\d{1,6}\s+|\d{5}(?:-\d{4})?$|"
+            r"[A-Z]{1,5}[-/]\d[A-Z0-9/-]*\b|"
+            r"street\b|st\.|avenue\b|ave\.|road\b|rd\.|"
+            r"boulevard\b|blvd\.|lane\b|ln\.|drive\b|dr\.|"
+            r"suite\b|unit\b)",
+            line,
+            maxsplit=1,
+            flags=re.IGNORECASE
+        )[0]
+
+        candidate = clean_vendor_name(candidate)
+        if candidate and re.search(r"[A-Za-z]", candidate):
+            return candidate[:255], 0.65
 
     return None, 0.0
 
@@ -744,12 +932,7 @@ def parse_invoice_fields(raw_text: str) -> dict[str, Any]:
 
     subtotal, subtotal_confidence = extract_subtotal(text)
 
-    total_amount, total_confidence = (
-        extract_amount_field(
-            text,
-            TOTAL_AMOUNT_PATTERNS
-        )
-    )
+    total_amount, total_confidence = extract_total_amount(text)
 
     currency, currency_confidence = (
         extract_currency(text)

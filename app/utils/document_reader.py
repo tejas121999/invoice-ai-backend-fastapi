@@ -91,7 +91,7 @@ def read_pdf_text(file_path: Path) -> str:
     try:
         document = pymupdf.open(file_path)
 
-    except FileNotFoundError as exc:
+    except (FileNotFoundError, pymupdf.FileNotFoundError) as exc:
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice file not found."
@@ -116,35 +116,57 @@ def read_pdf_text(file_path: Path) -> str:
         ) from exc
 
     try:
-        for page_number, page in enumerate(document, start=1):
-            embedded_text = page.get_text(
-                "text",
-                sort=True
-            ).strip()
-
-            # A digital invoice should normally contain useful text.
-            # Very short text often means it is a scanned PDF.
-            if len(embedded_text) >= 30:
-                page_texts.append(embedded_text)
-                continue
-
-            pixmap = page.get_pixmap(
-                dpi=settings.OCR_PDF_DPI,
-                alpha=False
+        if document.needs_pass:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="The uploaded PDF is password-protected."
             )
 
-            image = Image.open(
-                BytesIO(pixmap.tobytes("png"))
+        page_count = document.page_count
+        if page_count == 0:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+                detail="No readable text was found in the invoice."
             )
 
-            ocr_text = run_ocr_on_image(image)
+        for page_index in range(page_count):
+            page_number = page_index + 1
+            pixmap = None
 
-            if not ocr_text:
+            try:
+                page = document.load_page(page_index)
+                embedded_text = page.get_text(
+                    "text",
+                    sort=True
+                ).strip()
+
+                # A digital invoice should normally contain useful text.
+                # Very short text often means it is a scanned PDF.
+                if len(embedded_text) >= 30:
+                    page_text = embedded_text
+                else:
+                    pixmap = page.get_pixmap(
+                        dpi=settings.OCR_PDF_DPI,
+                        alpha=False
+                    )
+
+                    with BytesIO(pixmap.tobytes("png")) as image_data:
+                        with Image.open(image_data) as image:
+                            page_text = run_ocr_on_image(image)
+
+                    if not page_text:
+                        page_text = "[no text detected]"
+
                 page_texts.append(
-                    f"[Page {page_number}: no text detected]"
+                    f"[Page {page_number}]\n{page_text}"
                 )
-            else:
-                page_texts.append(ocr_text)
+
+            except Exception:
+                page_texts.append(
+                    f"[Page {page_number}: processing failed]"
+                )
+            finally:
+                del pixmap
 
     finally:
         document.close()

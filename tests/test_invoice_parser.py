@@ -78,6 +78,43 @@ Payment due within 15 days. Thank you for your business. $1,536.90
 
 This invoice was generated with the help of Wave Financial Inc."""
 
+PAGE_LOADED_DIGITAL_INVOICE_TEXT = """[Page 1]
+INVOICE NUMBER
+
+INV-2026-1001INVOICE
+Acme Office Supplies Ltd.
+
+INVOICE DATE            DUE DATE              CURRENCY
+15 November 2026        30 November 2026      INR
+
+BILL TO
+ABC Technologies Pvt Ltd.
+
+Description             Amount (INR)
+Office Supplies         5,000.00
+Printing Materials      2,000.00
+
+Subtotal                7,000.00
+Tax Amount              1,260.00
+Total Amount            8,260.00"""
+
+TWO_PAGE_INVOICE_TEXT = """[Page 1]
+TWO-PAGE TEST INVOICE
+NovaTech Solutions Pvt. Ltd.
+Invoice Number: NT-2026-2045
+Invoice Date: 18 November 2026
+Due Date: 03 December 2026
+Bill To: Global Retail Technologies Pvt. Ltd.
+Currency: INR
+Enterprise Software Development 45,000.00
+Cloud Infrastructure Setup 15,000.00
+Technical Support Services 10,000.00
+
+[Page 2]
+Subtotal 70,000.00
+Tax Amount (18%) 12,600.00
+Total Amount 82,600.00"""
+
 
 class InvoiceParserRegressionTests(unittest.TestCase):
     def test_invoice_57_two_column_number_and_unidentified_vendor(self):
@@ -133,6 +170,55 @@ Total Amount: 11800.00"""
                 )["fields"]
                 self.assertEqual(fields["invoiceNumber"], value)
 
+    def test_adjacent_invoice_label_is_not_part_of_invoice_number(self):
+        fields = parse_invoice_fields(
+            "Invoice Number\nINV-2026-1001INVOICE"
+        )["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "INV-2026-1001")
+
+    def test_digital_pdf_text_with_column_dates_and_vendor_after_number(self):
+        fields = parse_invoice_fields(
+            PAGE_LOADED_DIGITAL_INVOICE_TEXT
+        )["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "INV-2026-1001")
+        self.assertEqual(fields["vendorName"], "Acme Office Supplies Ltd.")
+        self.assertEqual(fields["invoiceDate"], "2026-11-15")
+        self.assertEqual(fields["dueDate"], "2026-11-30")
+        self.assertEqual(fields["subtotal"], 7000.0)
+        self.assertEqual(fields["taxAmount"], 1260.0)
+        self.assertEqual(fields["totalAmount"], 8260.0)
+        self.assertEqual(fields["currency"], "INR")
+
+    def test_two_page_invoice_extracts_header_and_page_two_tax(self):
+        result = parse_invoice_fields(TWO_PAGE_INVOICE_TEXT)
+        fields = result["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "NT-2026-2045")
+        self.assertEqual(fields["vendorName"], "NovaTech Solutions Pvt. Ltd.")
+        self.assertEqual(fields["invoiceDate"], "2026-11-18")
+        self.assertEqual(fields["dueDate"], "2026-12-03")
+        self.assertEqual(fields["subtotal"], 70000.0)
+        self.assertEqual(fields["taxAmount"], 12600.0)
+        self.assertEqual(fields["totalAmount"], 82600.0)
+        self.assertEqual(fields["currency"], "INR")
+        self.assertFalse(result["errors"])
+        self.assertGreater(result["confidence"]["taxAmount"], 0.9)
+        self.assertGreater(result["confidence"]["vendorName"], 0.7)
+
+    def test_customer_section_does_not_supply_vendor_name(self):
+        text = """[Page 1]
+TWO-PAGE TEST INVOICE
+Invoice Number: NT-2026-2045
+Customer Name: Global Retail Technologies Pvt. Ltd.
+[Page 2]
+Total Amount: 82,600.00"""
+
+        self.assertIsNone(
+            parse_invoice_fields(text)["fields"]["vendorName"]
+        )
+
     def test_numeric_invoice_number_ignores_email_phone_and_postal_code(self):
         text = """Email Invoice Number
 test@example.com 4
@@ -160,11 +246,144 @@ Invoice Date
                 )
 
     def test_generic_titles_are_not_vendor_names(self):
-        for title in ("INVOICE", "FREELANCE INVOICE", "TAX INVOICE", "BILL"):
+        for title in (
+            "INVOICE",
+            "FREELANCE INVOICE",
+            "TAX INVOICE",
+            "TWO-PAGE TEST INVOICE",
+            "BILL"
+        ):
             with self.subTest(title=title):
                 self.assertIsNone(
                     parse_invoice_fields(title)["fields"]["vendorName"]
                 )
+
+    def test_tax_labels_with_percentages_are_extracted(self):
+        cases = (
+            "Tax Amount (18%) 12,600.00",
+            "Tax Amount (18%)\n12,600.00",
+            "Tax (18%): INR 12,600.00",
+            "Total Tax: 12,600.00",
+            "GST (18%) 12,600.00",
+            "VAT Amount: 12,600.00"
+        )
+
+        for line in cases:
+            with self.subTest(line=line):
+                result = parse_invoice_fields(line)
+                self.assertEqual(result["fields"]["taxAmount"], 12600.0)
+                self.assertGreater(result["confidence"]["taxAmount"], 0.0)
+
+    def test_tax_components_are_summed_when_no_tax_total_is_labeled(self):
+        text = """[Page 1]
+Subtotal: 70,000.00
+[Page 2]
+CGST @9% 6,300.00
+SGST @9% 6,300.00
+Total Amount: 82,600.00"""
+
+        fields = parse_invoice_fields(text)["fields"]
+
+        self.assertEqual(fields["taxAmount"], 12600.0)
+        self.assertEqual(fields["totalAmount"], 82600.0)
+
+    def test_missing_tax_is_not_calculated_from_subtotal_and_total(self):
+        result = parse_invoice_fields(
+            "Subtotal: 70,000.00\nTotal Amount: 82,600.00"
+        )
+
+        self.assertIsNone(result["fields"]["taxAmount"])
+        self.assertEqual(result["confidence"]["taxAmount"], 0.0)
+
+    def test_subtotal_and_total_are_not_mistaken_for_tax(self):
+        fields = parse_invoice_fields(
+            "Subtotal: 70,000.00\nTotal Amount: 82,600.00"
+        )["fields"]
+
+        self.assertIsNone(fields["taxAmount"])
+
+    def test_tax_rate_without_tax_amount_is_not_used_as_tax(self):
+        fields = parse_invoice_fields(
+            "Tax Rate (18%)\nSubtotal: 70,000.00\n"
+            "Total Amount: 82,600.00"
+        )["fields"]
+
+        self.assertIsNone(fields["taxAmount"])
+
+    def test_financial_mismatch_reduces_confidence(self):
+        result = parse_invoice_fields(
+            "Subtotal: 100.00\n"
+            "Tax Amount: 20.00\n"
+            "Total Amount: 125.00"
+        )
+
+        self.assertTrue(result["errors"])
+        self.assertTrue(any(
+            "does not match" in error["message"]
+            for error in result["errors"]
+        ))
+        self.assertLessEqual(result["confidence"]["subtotal"], 0.60)
+        self.assertLessEqual(result["confidence"]["taxAmount"], 0.60)
+        self.assertLessEqual(result["confidence"]["totalAmount"], 0.60)
+
+    def test_page_markers_are_not_extracted_as_vendor_names(self):
+        markers = (
+            "[Page 1]",
+            "[Page 2]",
+            "[Page 3: processing failed]",
+            "[Page 4: no text detected]",
+            "[no text detected]",
+        )
+
+        for marker in markers:
+            with self.subTest(marker=marker):
+                fields = parse_invoice_fields(
+                    f"{marker}\nINVOICE\n"
+                    "Invoice Number: INV-2026-1001"
+                )["fields"]
+
+                self.assertIsNone(fields["vendorName"])
+
+    def test_invoice_fields_are_not_used_as_fallback_vendor_name(self):
+        text = """[Page 1]
+INVOICE
+Invoice Number: INV-2026-1001
+Total Amount: 100.00"""
+
+        self.assertIsNone(
+            parse_invoice_fields(text)["fields"]["vendorName"]
+        )
+
+    def test_page_markers_do_not_hide_an_actual_vendor_name(self):
+        text = """[Page 1]
+[no text detected]
+[Page 2]
+Vendor Name: Example Supplies Ltd.
+Invoice Number: INV-2026-1001
+Total Amount: 100.00
+[Page 3: processing failed]"""
+
+        fields = parse_invoice_fields(text)["fields"]
+
+        self.assertEqual(fields["vendorName"], "Example Supplies Ltd.")
+        self.assertEqual(fields["invoiceNumber"], "INV-2026-1001")
+
+    def test_page_markers_between_pages_do_not_affect_vendor_extraction(self):
+        text = """[Page 1]
+INVOICE
+Invoice Number: INV-2026-1001
+[Page 2]
+BrightWave Technologies
+Invoice Date: 10-Aug-2026
+[Page 3: processing failed]
+Total Amount: 100.00"""
+
+        fields = parse_invoice_fields(text)["fields"]
+
+        self.assertEqual(fields["vendorName"], "BrightWave Technologies")
+        self.assertEqual(fields["invoiceNumber"], "INV-2026-1001")
+        self.assertEqual(fields["invoiceDate"], "2026-08-10")
+        self.assertEqual(fields["totalAmount"], 100.0)
 
     def test_same_line_total_formats(self):
         cases = {

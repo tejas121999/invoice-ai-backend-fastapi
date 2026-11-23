@@ -53,6 +53,12 @@ def read_image_text(file_path: Path) -> str:
         with Image.open(file_path) as image:
             return run_ocr_on_image(image)
 
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice file not found."
+        ) from exc
+
     except PermissionError as exc:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -84,6 +90,12 @@ def read_pdf_text(file_path: Path) -> str:
 
     try:
         document = pymupdf.open(file_path)
+
+    except FileNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Invoice file not found."
+        ) from exc
 
     except PermissionError as exc:
         raise HTTPException(

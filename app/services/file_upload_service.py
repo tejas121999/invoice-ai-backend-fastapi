@@ -10,18 +10,20 @@ from app.utils.invoice_paths import resolve_invoice_path
 
 
 async def save_invoice_file(file: UploadFile):
-    extension = validate_invoice_file(file)
-
-    upload_dir = Path(settings.UPLOAD_DIR).resolve()
-    upload_dir.mkdir(parents=True, exist_ok=True)
-
-    unique_file_name = f"{uuid.uuid4()}{extension}"
-    file_path = upload_dir / unique_file_name
-
-    max_size = settings.MAX_FILE_SIZE_MB * 1024 * 1024
-    total_size = 0
+    file_path = None
 
     try:
+        extension = validate_invoice_file(file)
+
+        upload_dir = Path(settings.UPLOAD_DIR).resolve()
+        upload_dir.mkdir(parents=True, exist_ok=True)
+
+        unique_file_name = f"{uuid.uuid4()}{extension}"
+        file_path = upload_dir / unique_file_name
+
+        max_size = settings.MAX_FILE_SIZE_MB * 1024 * 1024
+        total_size = 0
+
         async with aiofiles.open(file_path, "wb") as out_file:
             while chunk := await file.read(1024 * 1024):
                 total_size += len(chunk)
@@ -54,12 +56,19 @@ async def save_invoice_file(file: UploadFile):
         raise
 
     except Exception as exc:
-        if file_path.exists():
-            file_path.unlink()
+        if file_path is not None:
+            try:
+                if file_path.exists():
+                    file_path.unlink()
+            except OSError as cleanup_exc:
+                raise HTTPException(
+                    status_code=500,
+                    detail="Invoice file could not be uploaded."
+                ) from cleanup_exc
 
         raise HTTPException(
             status_code=500,
-            detail=f"File upload failed: {str(exc)}"
+            detail="Invoice file could not be uploaded."
         ) from exc
 
     finally:

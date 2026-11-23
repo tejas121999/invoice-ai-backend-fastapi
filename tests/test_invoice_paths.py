@@ -7,7 +7,11 @@ from fastapi import HTTPException
 
 from app.core.config import BASE_DIR, settings
 from app.schemas.invoice_schema import InvoiceResponse, InvoiceUploadResponse
-from app.utils.document_reader import read_document_text
+from app.utils.document_reader import (
+    read_document_text,
+    read_image_text,
+    read_pdf_text
+)
 from app.utils.invoice_paths import (
     InvoiceFileAccessError,
     InvalidInvoicePathError,
@@ -110,6 +114,23 @@ class InvoicePathResolutionTests(unittest.TestCase):
         with self.assertRaises(InvalidInvoicePathError):
             resolve_invoice_path(str(outside_file))
 
+    def test_unc_path_is_rejected_without_accessing_network(self):
+        def resolve_without_network(path, *args, **kwargs):
+            return path
+
+        with (
+            patch(
+                "app.utils.invoice_paths.Path.resolve",
+                autospec=True,
+                side_effect=resolve_without_network
+            ),
+            patch("app.utils.invoice_paths.Path.stat") as stat_mock
+        ):
+            with self.assertRaises(InvalidInvoicePathError):
+                resolve_invoice_path(r"\\server\share\invoice.pdf")
+
+        stat_mock.assert_not_called()
+
     def test_symlink_escape_is_rejected(self):
         outside_file = self.base_dir / "outside.pdf"
         outside_file.write_bytes(b"%PDF-test")
@@ -123,6 +144,23 @@ class InvoicePathResolutionTests(unittest.TestCase):
         with self.assertRaises(InvalidInvoicePathError):
             resolve_invoice_path(str(link))
 
+    def test_symlink_escape_is_rejected_when_resolve_returns_target(self):
+        link = self.upload_dir / "outside.pdf"
+        outside_file = self.base_dir / "outside.pdf"
+
+        def resolve_symlink(path, *args, **kwargs):
+            if path == link:
+                return outside_file
+            return path
+
+        with patch(
+            "app.utils.invoice_paths.Path.resolve",
+            autospec=True,
+            side_effect=resolve_symlink
+        ):
+            with self.assertRaises(InvalidInvoicePathError):
+                resolve_invoice_path(str(link))
+
     def test_missing_file_raises_clear_exception(self):
         with self.assertRaises(InvoiceFileNotFoundError):
             resolve_invoice_path("uploads/invoices/missing.pdf")
@@ -134,11 +172,55 @@ class InvoicePathResolutionTests(unittest.TestCase):
         self.assertEqual(context.exception.status_code, 404)
         self.assertEqual(context.exception.detail, "Invoice file not found.")
 
+    def test_pdf_disappearing_after_resolution_returns_404(self):
+        invoice_file = self.upload_dir / "disappearing.pdf"
+
+        with (
+            patch(
+                "app.utils.document_reader.resolve_invoice_path",
+                return_value=invoice_file
+            ),
+            patch(
+                "app.utils.document_reader.pymupdf.open",
+                side_effect=FileNotFoundError(
+                    "File disappeared at C:\\private\\disappearing.pdf"
+                )
+            )
+        ):
+            with self.assertRaises(HTTPException) as context:
+                read_document_text(str(invoice_file))
+
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "Invoice file not found.")
+        self.assertNotIn("C:\\private", context.exception.detail)
+
+    def test_image_disappearing_after_resolution_returns_404(self):
+        invoice_file = self.upload_dir / "disappearing.png"
+
+        with (
+            patch(
+                "app.utils.document_reader.resolve_invoice_path",
+                return_value=invoice_file
+            ),
+            patch(
+                "app.utils.document_reader.Image.open",
+                side_effect=FileNotFoundError(
+                    "File disappeared at C:\\private\\disappearing.png"
+                )
+            )
+        ):
+            with self.assertRaises(HTTPException) as context:
+                read_document_text(str(invoice_file))
+
+        self.assertEqual(context.exception.status_code, 404)
+        self.assertEqual(context.exception.detail, "Invoice file not found.")
+        self.assertNotIn("C:\\private", context.exception.detail)
+
     def test_document_reader_reports_access_error(self):
         with patch(
             "app.utils.document_reader.resolve_invoice_path",
             side_effect=InvoiceFileAccessError(
-                "Invoice file cannot be accessed."
+                "Permission denied at C:\\private\\invoice.pdf"
             )
         ):
             with self.assertRaises(HTTPException) as context:
@@ -149,6 +231,74 @@ class InvoicePathResolutionTests(unittest.TestCase):
             context.exception.detail,
             "Invoice file cannot be accessed."
         )
+        self.assertNotIn("C:\\private", context.exception.detail)
+
+    def test_permission_error_during_path_resolution_is_wrapped(self):
+        with patch(
+            "pathlib.Path.resolve",
+            side_effect=PermissionError(
+                "Permission denied at C:\\private\\invoice.pdf"
+            )
+        ):
+            with self.assertRaises(InvoiceFileAccessError) as context:
+                resolve_invoice_path("uploads/invoices/example.pdf")
+
+        self.assertEqual(
+            str(context.exception),
+            "Invoice file cannot be accessed."
+        )
+
+    def test_permission_error_during_stat_is_wrapped(self):
+        invoice_file = self.upload_dir / "example.pdf"
+        invoice_file.write_bytes(b"%PDF-test")
+
+        with patch(
+            "pathlib.Path.stat",
+            side_effect=PermissionError(
+                "Permission denied at C:\\private\\invoice.pdf"
+            )
+        ):
+            with self.assertRaises(InvoiceFileAccessError) as context:
+                resolve_invoice_path(str(invoice_file))
+
+        self.assertEqual(
+            str(context.exception),
+            "Invoice file cannot be accessed."
+        )
+
+    def test_pdf_open_permission_error_has_stable_http_detail(self):
+        with patch(
+            "app.utils.document_reader.pymupdf.open",
+            side_effect=PermissionError(
+                "Permission denied at C:\\private\\invoice.pdf"
+            )
+        ):
+            with self.assertRaises(HTTPException) as context:
+                read_pdf_text(self.upload_dir / "example.pdf")
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(
+            context.exception.detail,
+            "Invoice file cannot be accessed."
+        )
+        self.assertNotIn("C:\\private", context.exception.detail)
+
+    def test_image_open_permission_error_has_stable_http_detail(self):
+        with patch(
+            "app.utils.document_reader.Image.open",
+            side_effect=PermissionError(
+                "Permission denied at C:\\private\\invoice.png"
+            )
+        ):
+            with self.assertRaises(HTTPException) as context:
+                read_image_text(self.upload_dir / "invoice.png")
+
+        self.assertEqual(context.exception.status_code, 500)
+        self.assertEqual(
+            context.exception.detail,
+            "Invoice file cannot be accessed."
+        )
+        self.assertNotIn("C:\\private", context.exception.detail)
 
     def test_document_reader_reads_valid_pdf_path(self):
         invoice_file = self.upload_dir / "example.pdf"

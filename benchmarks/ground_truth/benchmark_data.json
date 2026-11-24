@@ -1,0 +1,29 @@
+{
+  "samples": [],
+  "exampleSchema": {
+    "sampleFilename": "sample.pdf",
+    "documentType": "digital_pdf",
+    "expectedPageCount": 1,
+    "expectedTextByPage": [
+      {
+        "page": 1,
+        "text": null
+      }
+    ],
+    "expectedFields": {
+      "invoiceNumber": null,
+      "vendorName": null,
+      "invoiceDate": null,
+      "dueDate": null,
+      "subtotal": null,
+      "taxAmount": null,
+      "totalAmount": null,
+      "currency": null
+    }
+  },
+  "schemaNotes": {
+    "samples": "Add only samples whose expected values have been verified against the original sample.",
+    "unknownValues": "Use null for unknown or unavailable expected values.",
+    "expectedTextByPage": "Record the verified expected text separately for each page."
+  }
+}

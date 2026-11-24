@@ -107,18 +107,9 @@ def get_invoice_result(
             "uploadedAt": invoice.uploadedAt,
             "processedAt": extracted_data.updatedAt,
             "rawText": invoice.rawText,
-            "fields": {
-                "invoiceNumber": extracted_data.invoiceNumber,
-                "vendorName": extracted_data.vendorName,
-                "invoiceDate": extracted_data.invoiceDate,
-                "dueDate": extracted_data.dueDate,
-                "subtotal": extracted_data.subtotal,
-                "taxAmount": extracted_data.taxAmount,
-                "totalAmount": extracted_data.totalAmount,
-                "currency": extracted_data.currency
-            },
+            "fields": extracted_data.extractedFieldsJson or {},
             "confidence": extracted_data.confidenceJson,  # Make sure this is parsed JSON
-            "reviewedFieldsJson": extracted_data.extractedFieldsJson or {},
+            "reviewedFieldsJson": extracted_data.reviewedFieldsJson or {},
             "isReviewed": extracted_data.isReviewed
         }
     }

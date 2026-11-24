@@ -1,3 +1,6 @@
+from pathlib import Path
+from time import perf_counter
+
 from fastapi import HTTPException, UploadFile
 from sqlalchemy.orm import Session
 from starlette import status
@@ -19,6 +22,7 @@ from app.utils.invoice_status import InvoiceStatus
 from app.services.audit_service import save_audit_log
 from app.schemas.extraction_schema import ExtractionRequest
 from app.services.extraction_service import extract_invoice
+from app.utils.performance_logging import log_performance
 from datetime import date, datetime
 from decimal import Decimal
 from typing import Any
@@ -150,12 +154,47 @@ async def process_invoice_service(
     db: Session,
     invoice_id: int
 ):
-    invoice = get_invoice_by_id(
-        db=db,
-        invoice_id=invoice_id
+    processing_started_at = perf_counter()
+    lookup_started_at = perf_counter()
+    try:
+        invoice = get_invoice_by_id(
+            db=db,
+            invoice_id=invoice_id
+        )
+    except Exception:
+        log_performance(
+            stage="invoice_lookup",
+            duration_ms=(perf_counter() - lookup_started_at) * 1000,
+            invoice_id=invoice_id,
+            document_type=None
+        )
+        log_performance(
+            stage="total_processing",
+            duration_ms=(perf_counter() - processing_started_at) * 1000,
+            invoice_id=invoice_id,
+            document_type=None
+        )
+        raise
+
+    document_type = (
+        Path(invoice.filePath).suffix.lstrip(".").lower()
+        if invoice
+        else None
+    )
+    log_performance(
+        stage="invoice_lookup",
+        duration_ms=(perf_counter() - lookup_started_at) * 1000,
+        invoice_id=invoice_id,
+        document_type=document_type
     )
 
     if not invoice:
+        log_performance(
+            stage="total_processing",
+            duration_ms=(perf_counter() - processing_started_at) * 1000,
+            invoice_id=invoice_id,
+            document_type=None
+        )
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND,
             detail="Invoice not found"
@@ -185,11 +224,22 @@ async def process_invoice_service(
             by_alias=True
         )
 
-        saved_result = save_extract_result(
-            db=db,
-            invoice_id=invoice.id,
-            extraction_data=extraction_response
-        )
+        persistence_started_at = perf_counter()
+        try:
+            saved_result = save_extract_result(
+                db=db,
+                invoice_id=invoice.id,
+                extraction_data=extraction_response
+            )
+        finally:
+            log_performance(
+                stage="extraction_result_persistence",
+                duration_ms=(
+                    perf_counter() - persistence_started_at
+                ) * 1000,
+                invoice_id=invoice_id,
+                document_type=document_type
+            )
 
         if not saved_result:
             raise HTTPException(
@@ -224,8 +274,27 @@ async def process_invoice_service(
             }
         )
 
-        db.commit()
-        db.refresh(invoice)
+        commit_started_at = perf_counter()
+        try:
+            db.commit()
+        finally:
+            log_performance(
+                stage="database_commit",
+                duration_ms=(perf_counter() - commit_started_at) * 1000,
+                invoice_id=invoice_id,
+                document_type=document_type
+            )
+
+        refresh_started_at = perf_counter()
+        try:
+            db.refresh(invoice)
+        finally:
+            log_performance(
+                stage="database_refresh",
+                duration_ms=(perf_counter() - refresh_started_at) * 1000,
+                invoice_id=invoice_id,
+                document_type=document_type
+            )
 
         return {
             "invoiceId": invoice.id,
@@ -256,6 +325,13 @@ async def process_invoice_service(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Invoice processing failed."
         ) from exc
+    finally:
+        log_performance(
+            stage="total_processing",
+            duration_ms=(perf_counter() - processing_started_at) * 1000,
+            invoice_id=invoice_id,
+            document_type=document_type
+        )
 
 
 def review_invoice_service(

@@ -37,6 +37,22 @@ class ExtractionFields(BaseModel):
         alias="totalAmount"
     )
     currency: str | None = None
+    po_number: str | None = Field(default=None, alias="poNumber")
+    vendor_gst: str | None = Field(default=None, alias="vendorGst")
+    payment_terms: str | None = Field(default=None, alias="paymentTerms")
+    shipping_charges: float | None = Field(
+        default=None,
+        alias="shippingCharges"
+    )
+    discount: float | None = None
+    vendor_address: str | None = Field(
+        default=None,
+        alias="vendorAddress"
+    )
+    payment_reference: str | None = Field(
+        default=None,
+        alias="paymentReference"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 
@@ -68,6 +84,19 @@ class ExtractionConfidence(BaseModel):
         alias="totalAmount"
     )
     currency: float = 0.0
+    po_number: float = Field(default=0.0, alias="poNumber")
+    vendor_gst: float = Field(default=0.0, alias="vendorGst")
+    payment_terms: float = Field(default=0.0, alias="paymentTerms")
+    shipping_charges: float = Field(
+        default=0.0,
+        alias="shippingCharges"
+    )
+    discount: float = 0.0
+    vendor_address: float = Field(default=0.0, alias="vendorAddress")
+    payment_reference: float = Field(
+        default=0.0,
+        alias="paymentReference"
+    )
 
     model_config = ConfigDict(populate_by_name=True)
 

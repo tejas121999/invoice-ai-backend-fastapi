@@ -125,7 +125,7 @@ def review_invoice(
     result = review_invoice_service(
         db=db,
         invoice_id=invoice_id,
-        review_data=payload.model_dump()
+        review_data=payload.model_dump(exclude_unset=True)
     )
 
     invoice = result["invoice"]

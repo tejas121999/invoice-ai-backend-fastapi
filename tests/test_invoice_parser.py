@@ -274,6 +274,119 @@ Invoice Date
                 self.assertEqual(result["fields"]["taxAmount"], 12600.0)
                 self.assertGreater(result["confidence"]["taxAmount"], 0.0)
 
+    def test_all_dynamic_fields_are_extracted_with_matching_confidence(self):
+        text = """Invoice Number: NT-2026-2045
+Vendor GSTIN: 27ABCDE1234F1Z5
+Purchase Order Number: PO-2026-102
+Payment Terms: Net 30 days
+Shipping Charges: INR 1,250.00
+Discount (10%): INR 500.00
+Vendor Address:
+12 Market Street
+Suite 400
+Springfield
+Payment Reference: PAY-REF-2026-88"""
+
+        result = parse_invoice_fields(text)
+
+        self.assertEqual(
+            {
+                name: result["fields"][name]
+                for name in (
+                    "poNumber",
+                    "vendorGst",
+                    "paymentTerms",
+                    "shippingCharges",
+                    "discount",
+                    "vendorAddress",
+                    "paymentReference"
+                )
+            },
+            {
+                "poNumber": "PO-2026-102",
+                "vendorGst": "27ABCDE1234F1Z5",
+                "paymentTerms": "Net 30 days",
+                "shippingCharges": 1250.0,
+                "discount": 500.0,
+                "vendorAddress": (
+                    "12 Market Street Suite 400 Springfield"
+                ),
+                "paymentReference": "PAY-REF-2026-88"
+            }
+        )
+        for field_name in (
+            "poNumber",
+            "vendorGst",
+            "paymentTerms",
+            "shippingCharges",
+            "discount",
+            "vendorAddress",
+            "paymentReference"
+        ):
+            with self.subTest(field=field_name):
+                self.assertGreater(result["confidence"][field_name], 0.0)
+
+    def test_dynamic_field_label_variations(self):
+        cases = (
+            ("PO No.: PO-88", "poNumber", "PO-88"),
+            ("P.O. Number: PO-89", "poNumber", "PO-89"),
+            ("Terms of Payment: Due on receipt",
+             "paymentTerms", "Due on receipt"),
+            ("Delivery Charges: 45.50", "shippingCharges", 45.5),
+            ("Freight Charges: USD 60.00", "shippingCharges", 60.0),
+            ("Less Discount: 15.00", "discount", 15.0),
+            ("Supplier Address: 8 River Road",
+             "vendorAddress", "8 River Road"),
+            ("Transaction ID: TX-789", "paymentReference", "TX-789"),
+            ("UTR No.: UTR-2026-42",
+             "paymentReference", "UTR-2026-42")
+        )
+
+        for line, field_name, expected in cases:
+            with self.subTest(line=line):
+                result = parse_invoice_fields(line)
+                self.assertEqual(result["fields"][field_name], expected)
+                self.assertGreater(result["confidence"][field_name], 0.0)
+
+    def test_gst_label_variations_are_extracted(self):
+        gst_number = "27ABCDE1234F1Z5"
+
+        for label in ("GSTIN", "GST Number", "GST No.", "Vendor GST"):
+            with self.subTest(label=label):
+                result = parse_invoice_fields(f"{label}: {gst_number}")
+                self.assertEqual(result["fields"]["vendorGst"], gst_number)
+                self.assertGreater(result["confidence"]["vendorGst"], 0.0)
+
+    def test_dynamic_amounts_support_next_line_values_and_reject_rates(self):
+        result = parse_invoice_fields(
+            "Shipping Charges\nINR 1,200.00\n"
+            "Discount: 10%"
+        )
+
+        self.assertEqual(result["fields"]["shippingCharges"], 1200.0)
+        self.assertIsNone(result["fields"]["discount"])
+        self.assertNotIn("discount", result["confidence"])
+
+    def test_missing_dynamic_fields_have_no_confidence_entries(self):
+        result = parse_invoice_fields(
+            "Invoice Number: INV-2026-1001\n"
+            "Total Amount: 100.00"
+        )
+        dynamic_fields = (
+            "poNumber",
+            "vendorGst",
+            "paymentTerms",
+            "shippingCharges",
+            "discount",
+            "vendorAddress",
+            "paymentReference"
+        )
+
+        for field_name in dynamic_fields:
+            with self.subTest(field=field_name):
+                self.assertIsNone(result["fields"][field_name])
+                self.assertNotIn(field_name, result["confidence"])
+
     def test_tax_components_are_summed_when_no_tax_total_is_labeled(self):
         text = """[Page 1]
 Subtotal: 70,000.00

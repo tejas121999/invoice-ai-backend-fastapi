@@ -59,6 +59,13 @@ class InvoiceReviewRequest(BaseModel):
     taxAmount: Optional[Decimal] = Field(default=None, ge=0)
     totalAmount: Optional[Decimal] = Field(default=None, ge=0)
     currency: Optional[str] = Field(default=None, max_length=8)
+    poNumber: Optional[str] = None
+    vendorGst: Optional[str] = None
+    paymentTerms: Optional[str] = None
+    shippingCharges: Optional[Decimal] = Field(default=None, ge=0)
+    discount: Optional[Decimal] = Field(default=None, ge=0)
+    vendorAddress: Optional[str] = None
+    paymentReference: Optional[str] = None
     reviewedBy: Optional[int] = None
 
 

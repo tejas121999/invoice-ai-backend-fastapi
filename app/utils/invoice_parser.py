@@ -103,11 +103,76 @@ VENDOR_LABEL_PATTERNS = [
 
 VENDOR_GST_PATTERNS = [
     (
-        r"\b(?:vendor\s*)?(?:gst|gstin|gst\s*number)"
+        r"\b(?:vendor\s*)?(?:gstin|gst\s*(?:number|no\.?|#)?)"
         r"\s*(?:[:\-]\s*)?"
         r"([0-9]{2}[A-Z]{5}[0-9]{4}[A-Z][0-9A-Z]Z[0-9A-Z])"
     )
 ]
+
+PO_NUMBER_LABEL_PATTERNS = (
+    r"purchase\s+order(?:\s+(?:number|no\.?))?",
+    r"p\.?\s*o\.?\s*(?:number|no\.?|#)",
+)
+
+PAYMENT_TERMS_LABEL_PATTERNS = (
+    r"payment\s+terms?",
+    r"terms\s+of\s+payment",
+    r"payment\s+due",
+)
+
+SHIPPING_CHARGES_LABEL_PATTERNS = (
+    r"shipping\s+(?:charges?|costs?)",
+    r"delivery\s+charges?",
+    r"freight\s+charges?",
+    r"carriage\s+charges?",
+)
+
+DISCOUNT_LABEL_PATTERNS = (
+    r"(?:total\s+)?discount(?:\s+amount)?",
+    r"less\s+discount",
+    r"cash\s+discount",
+    r"trade\s+discount",
+)
+
+VENDOR_ADDRESS_LABEL_PATTERNS = (
+    r"vendor\s+address",
+    r"supplier\s+address",
+    r"company\s+address",
+)
+
+PAYMENT_REFERENCE_LABEL_PATTERNS = (
+    r"payment\s+reference",
+    r"payment\s+ref\.?",
+    r"transaction\s+(?:reference|ref\.?|id)",
+    r"reference\s+(?:number|no\.?|#)",
+    r"utr\s+(?:number|no\.?|#)?",
+)
+
+ADDITIONAL_FIELD_LABEL_PATTERNS = (
+    *PO_NUMBER_LABEL_PATTERNS,
+    *PAYMENT_TERMS_LABEL_PATTERNS,
+    *SHIPPING_CHARGES_LABEL_PATTERNS,
+    *DISCOUNT_LABEL_PATTERNS,
+    *VENDOR_ADDRESS_LABEL_PATTERNS,
+    *PAYMENT_REFERENCE_LABEL_PATTERNS,
+    r"vendor\s+gst",
+    r"gstin",
+    r"gst\s*(?:number|no\.?|#)?",
+    r"invoice\s*(?:number|no\.?|#|date)",
+    r"bill\s*(?:number|no\.?|date)",
+    r"due\s+date",
+    r"subtotal",
+    r"sub\s+total",
+    r"tax\s+amount",
+    r"total\s+tax",
+    r"total\s+amount",
+    r"grand\s+total",
+    r"currency",
+    r"bill\s+to",
+    r"ship\s+to",
+    r"customer(?:\s+(?:name|address|details|information))?",
+    r"buyer(?:\s+(?:name|address|details|information))?",
+)
 
 COMPANY_KEYWORDS = (
     "private limited",
@@ -252,6 +317,107 @@ def extract_vendor_gst(
         text,
         VENDOR_GST_PATTERNS
     )
+
+
+def extract_labeled_text_field(
+    text: str,
+    label_patterns: tuple[str, ...],
+    *,
+    continuation_lines: int = 0
+) -> tuple[str | None, float]:
+    lines = get_clean_lines(text)
+    labels = "|".join(label_patterns)
+    label_pattern = re.compile(
+        r"^\s*(?:" + labels
+        + r")(?=\s|[:#\-]|$)\s*[:#\-]?\s*(.*?)\s*$",
+        re.IGNORECASE
+    )
+    any_field_pattern = re.compile(
+        r"^\s*(?:" + "|".join(ADDITIONAL_FIELD_LABEL_PATTERNS)
+        + r")\b",
+        re.IGNORECASE
+    )
+
+    for index, line in enumerate(lines):
+        match = label_pattern.match(line)
+        if not match:
+            continue
+
+        value = match.group(1).strip(" :-")
+        if value:
+            value = re.split(
+                r"\s+(?=(?:" + "|".join(
+                    ADDITIONAL_FIELD_LABEL_PATTERNS
+                ) + r")\b\s*[:#\-])",
+                value,
+                maxsplit=1,
+                flags=re.IGNORECASE
+            )[0].strip(" :-")
+            if value:
+                return value, 0.95
+
+        continuation: list[str] = []
+        for next_line in lines[
+            index + 1:index + 1 + continuation_lines
+        ]:
+            if any_field_pattern.match(next_line):
+                break
+            continuation.append(next_line)
+
+        if continuation:
+            return " ".join(continuation), 0.90
+
+    return None, 0.0
+
+
+def extract_labeled_amount(
+    text: str,
+    label_patterns: tuple[str, ...]
+) -> tuple[float | None, float]:
+    lines = get_clean_lines(text)
+    labels = "|".join(label_patterns)
+    label_pattern = re.compile(
+        r"^\s*(?:" + labels
+        + r")(?=\s|[:#\-]|$)\s*[:#\-]?\s*(.*?)\s*$",
+        re.IGNORECASE
+    )
+    currency = r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?"
+    amount_pattern = re.compile(
+        r"^(?:(?:\(\s*\d+(?:\.\d+)?\s*%\)|"
+        r"\d+(?:\.\d+)?\s*%)\s*[:\-]?\s*)?"
+        + currency
+        + r"\s*(-?\d[\d,]*(?:\.\d{1,2})?)"
+        + r"(?:\s*(?:INR|USD|EUR|GBP))?\s*$",
+        re.IGNORECASE
+    )
+    any_field_pattern = re.compile(
+        r"^\s*(?:" + "|".join(ADDITIONAL_FIELD_LABEL_PATTERNS)
+        + r")\b",
+        re.IGNORECASE
+    )
+
+    for index, line in enumerate(lines):
+        match = label_pattern.match(line)
+        if not match:
+            continue
+
+        value_text = match.group(1).strip(" :-")
+        amount_match = amount_pattern.fullmatch(value_text)
+        if amount_match:
+            amount = parse_amount(amount_match.group(1))
+            if amount is not None:
+                return amount, 0.95
+
+        if not value_text and index + 1 < len(lines):
+            next_line = lines[index + 1]
+            if not any_field_pattern.match(next_line):
+                amount_match = amount_pattern.fullmatch(next_line)
+                if amount_match:
+                    amount = parse_amount(amount_match.group(1))
+                    if amount is not None:
+                        return amount, 0.90
+
+    return None, 0.0
 
 
 def clean_vendor_name(value: str) -> str:
@@ -1108,6 +1274,36 @@ def parse_invoice_fields(raw_text: str) -> dict[str, Any]:
     if tax_amount is None:
         tax_amount, tax_confidence = extract_indirect_tax_total(text)
 
+    po_number, po_number_confidence = extract_labeled_text_field(
+        text,
+        PO_NUMBER_LABEL_PATTERNS
+    )
+    payment_terms, payment_terms_confidence = extract_labeled_text_field(
+        text,
+        PAYMENT_TERMS_LABEL_PATTERNS,
+        continuation_lines=1
+    )
+    shipping_charges, shipping_charges_confidence = (
+        extract_labeled_amount(text, SHIPPING_CHARGES_LABEL_PATTERNS)
+    )
+    discount, discount_confidence = extract_labeled_amount(
+        text,
+        DISCOUNT_LABEL_PATTERNS
+    )
+    vendor_address, vendor_address_confidence = (
+        extract_labeled_text_field(
+            text,
+            VENDOR_ADDRESS_LABEL_PATTERNS,
+            continuation_lines=3
+        )
+    )
+    payment_reference, payment_reference_confidence = (
+        extract_labeled_text_field(
+            text,
+            PAYMENT_REFERENCE_LABEL_PATTERNS
+        )
+    )
+
     fields = {
         "invoiceNumber": invoice_number,
         "vendorName": vendor_name,
@@ -1117,7 +1313,13 @@ def parse_invoice_fields(raw_text: str) -> dict[str, Any]:
         "taxAmount": tax_amount,
         "totalAmount": total_amount,
         "currency": currency,
-        "vendorGst": vendor_gst
+        "vendorGst": vendor_gst,
+        "poNumber": po_number,
+        "paymentTerms": payment_terms,
+        "shippingCharges": shipping_charges,
+        "discount": discount,
+        "vendorAddress": vendor_address,
+        "paymentReference": payment_reference
     }
 
     confidence = {
@@ -1128,9 +1330,29 @@ def parse_invoice_fields(raw_text: str) -> dict[str, Any]:
         "subtotal": subtotal_confidence,
         "taxAmount": tax_confidence,
         "totalAmount": total_confidence,
-        "currency": currency_confidence,
-        "vendorGstConfidence": vendor_gst_confidence
+        "currency": currency_confidence
     }
+    dynamic_confidences = {
+        "poNumber": (po_number, po_number_confidence),
+        "vendorGst": (vendor_gst, vendor_gst_confidence),
+        "paymentTerms": (payment_terms, payment_terms_confidence),
+        "shippingCharges": (
+            shipping_charges,
+            shipping_charges_confidence
+        ),
+        "discount": (discount, discount_confidence),
+        "vendorAddress": (vendor_address, vendor_address_confidence),
+        "paymentReference": (
+            payment_reference,
+            payment_reference_confidence
+        )
+    }
+    confidence.update({
+        field_name: field_confidence
+        for field_name, (field_value, field_confidence)
+        in dynamic_confidences.items()
+        if field_value is not None
+    })
 
     errors: list[dict[str, str]] = []
 

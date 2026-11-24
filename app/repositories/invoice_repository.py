@@ -163,7 +163,8 @@ def update_invoice_review(
     if not extracted_data:
         return None
 
-    reviewed_fields = {
+    reviewed_fields = dict(extracted_data.reviewedFieldsJson or {})
+    reviewed_fields.update({
         "invoiceNumber": review_data.get("invoiceNumber"),
         "vendorName": review_data.get("vendorName"),
         "invoiceDate": review_data.get("invoiceDate"),
@@ -172,7 +173,22 @@ def update_invoice_review(
         "taxAmount": review_data.get("taxAmount"),
         "totalAmount": review_data.get("totalAmount"),
         "currency": review_data.get("currency")
-    }
+    })
+
+    dynamic_fields = (
+        "poNumber",
+        "vendorGst",
+        "paymentTerms",
+        "shippingCharges",
+        "discount",
+        "vendorAddress",
+        "paymentReference"
+    )
+    reviewed_fields.update({
+        field_name: review_data[field_name]
+        for field_name in dynamic_fields
+        if field_name in review_data
+    })
 
     reviewed_fields_json = {
         key: _to_json_safe(value)

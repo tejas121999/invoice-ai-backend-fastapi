@@ -863,6 +863,103 @@ class PaymentPairFeatureTests(unittest.TestCase):
         features = generate_payment_pair_features(pair, pilot)
         self.assertIsNone(features["samePaymentRun"])
 
+    def test_partial_payment_ratio_uses_invoice_allocations_without_pair_payment_a(self):
+        payment_a = make_payment(payment_id="PAY-A")
+        payment_b = make_payment(payment_id="PAY-B")
+        pair = make_pair(payment_a=None, payment_b=payment_b)
+        pilot = make_pilot(
+            pair,
+            payments={"PAY-A": payment_a, "PAY-B": payment_b},
+            allocations={
+                "ALLOC-A": make_allocation(
+                    allocation_id="ALLOC-A",
+                    invoice_id="TEST-A",
+                    payment_id="PAY-A",
+                    allocated_amount=Decimal("600.00"),
+                ),
+                "ALLOC-B": make_allocation(
+                    allocation_id="ALLOC-B",
+                    invoice_id="TEST-B",
+                    payment_id="PAY-B",
+                    allocated_amount=Decimal("400.00"),
+                ),
+            },
+        )
+
+        features = generate_payment_pair_features(pair, pilot)
+        self.assertEqual(features["partialPaymentRatio"], 0.4)
+        self.assertIsNone(features["paidAmountMatch"])
+        self.assertIsNone(features["paidAmountSimilarity"])
+        self.assertIsNone(features["paymentReferenceSimilarity"])
+        self.assertIsNone(features["samePaymentRun"])
+
+    def test_partial_payment_ratio_uses_invoice_allocations_without_pair_payment_b(self):
+        payment_a = make_payment(payment_id="PAY-A")
+        payment_b = make_payment(payment_id="PAY-B")
+        pair = make_pair(payment_a=payment_a, payment_b=None)
+        pilot = make_pilot(
+            pair,
+            payments={"PAY-A": payment_a, "PAY-B": payment_b},
+            allocations={
+                "ALLOC-A": make_allocation(
+                    allocation_id="ALLOC-A",
+                    invoice_id="TEST-A",
+                    payment_id="PAY-A",
+                    allocated_amount=Decimal("300.00"),
+                ),
+                "ALLOC-B": make_allocation(
+                    allocation_id="ALLOC-B",
+                    invoice_id="TEST-B",
+                    payment_id="PAY-B",
+                    allocated_amount=Decimal("800.00"),
+                ),
+            },
+        )
+
+        features = generate_payment_pair_features(pair, pilot)
+        self.assertEqual(features["partialPaymentRatio"], 0.3)
+        self.assertIsNone(features["paidAmountMatch"])
+        self.assertIsNone(features["paidAmountSimilarity"])
+        self.assertIsNone(features["paymentReferenceSimilarity"])
+        self.assertIsNone(features["samePaymentRun"])
+
+    def test_partial_payment_ratio_uses_allocations_without_pair_payments(self):
+        payment_a = make_payment(payment_id="PAY-A")
+        payment_b = make_payment(payment_id="PAY-B")
+        pair = make_pair()
+        pilot = make_pilot(
+            pair,
+            payments={"PAY-A": payment_a, "PAY-B": payment_b},
+            allocations={
+                "ALLOC-A": make_allocation(
+                    allocation_id="ALLOC-A",
+                    invoice_id="TEST-A",
+                    payment_id="PAY-A",
+                    allocated_amount=Decimal("700.00"),
+                ),
+                "ALLOC-B": make_allocation(
+                    allocation_id="ALLOC-B",
+                    invoice_id="TEST-B",
+                    payment_id="PAY-B",
+                    allocated_amount=Decimal("900.00"),
+                ),
+            },
+        )
+
+        features = generate_payment_pair_features(pair, pilot)
+        self.assertEqual(features["partialPaymentRatio"], 0.7)
+        self.assertIsNone(features["paidAmountMatch"])
+        self.assertIsNone(features["paidAmountSimilarity"])
+        self.assertIsNone(features["paymentReferenceSimilarity"])
+        self.assertIsNone(features["samePaymentRun"])
+
+    def test_missing_pair_payments_without_eligible_allocations_returns_null(self):
+        pair = make_pair()
+        pilot = make_pilot(pair)
+
+        features = generate_payment_pair_features(pair, pilot)
+        self.assertIsNone(features["partialPaymentRatio"])
+
     def test_partial_payment_ratio_for_full_and_partial_coverage(self):
         payment_a = make_payment(payment_id="PAY-A")
         payment_b = make_payment(payment_id="PAY-B")
@@ -1032,6 +1129,44 @@ class PaymentPairFeatureTests(unittest.TestCase):
                 pilot,
             )
             self.assertEqual(features["partialPaymentRatio"], 1.0)
+
+    def test_pilot_pairs_without_payment_references_use_source_allocations(self):
+        pilot = load_synthetic_pilot(PILOT_DIR)
+
+        for pair_id in ("PAIR-0027", "PAIR-0028", "PAIR-0029", "PAIR-0030"):
+            pair = pilot.pairs[pair_id]
+            self.assertIsNone(pair.payment_a)
+            self.assertIsNone(pair.payment_b)
+
+            coverages = []
+            for invoice in (pair.invoice_a, pair.invoice_b):
+                allocations = [
+                    allocation
+                    for allocation in pilot.allocations.values()
+                    if allocation.invoice_id == invoice.invoice_id
+                ]
+                eligible_amount = Decimal("0")
+                for allocation in allocations:
+                    if (
+                        allocation.allocation_status == "confirmed_paid"
+                        and allocation.settlement_event == "settled"
+                    ):
+                        payment = pilot.payments[allocation.payment_id]
+                        self.assertEqual(payment.payment_status, "paid")
+                        self.assertEqual(payment.settlement_event, "settled")
+                        self.assertEqual(
+                            payment.payment_currency,
+                            invoice.currency,
+                        )
+                        eligible_amount += allocation.allocated_amount
+                coverages.append(
+                    min(Decimal("1"), eligible_amount / invoice.total_amount)
+                )
+
+            expected = float(min(coverages))
+            features = generate_payment_pair_features(pair, pilot)
+            self.assertEqual(features["partialPaymentRatio"], expected)
+            self.assertEqual(expected, 1.0)
 
     def test_payment_feature_output_is_deterministic_and_exact(self):
         payment_a = make_payment(payment_id="PAY-A")

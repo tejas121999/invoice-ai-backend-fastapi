@@ -293,12 +293,8 @@ def _has_reversal_or_refund_evidence(
 
 def _calculate_invoice_payment_coverage(
     invoice: InvoiceRecord,
-    payment: PaymentRecord | None,
     pilot: SyntheticPilotData,
 ) -> Decimal | None:
-    if payment is None:
-        return None
-
     invoice_total = _to_finite_decimal(invoice.total_amount)
     if invoice_total is None or invoice_total <= Decimal("0"):
         return None
@@ -341,12 +337,10 @@ def _calculate_partial_payment_ratio(
 ) -> float | None:
     coverage_a = _calculate_invoice_payment_coverage(
         pair.invoice_a,
-        pair.payment_a,
         pilot,
     )
     coverage_b = _calculate_invoice_payment_coverage(
         pair.invoice_b,
-        pair.payment_b,
         pilot,
     )
     if coverage_a is None or coverage_b is None:

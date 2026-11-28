@@ -1,0 +1,17 @@
+{
+  "dataset_version": "pilot-v3",
+  "generator_seed": 20261128,
+  "generator_version": "pilot-generator-v3",
+  "supplier_count": 12,
+  "invoice_count": 36,
+  "payment_count": 37,
+  "allocation_count": 37,
+  "pair_count": 30,
+  "label_counts": {
+    "duplicate": 13,
+    "not_duplicate": 13,
+    "uncertain": 4
+  },
+  "binary_pair_count": 26,
+  "uncertain_pair_count": 4
+}

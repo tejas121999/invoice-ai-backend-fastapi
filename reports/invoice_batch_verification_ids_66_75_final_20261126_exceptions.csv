@@ -1,0 +1,3 @@
+﻿invoice_id,file_name,exception_type,field,details
+71,2c7ec3a3-3170-421e-b6a8-858cb50a8e0d.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+70,8f572a2d-1b64-4bf2-85a1-851cb2c142a7.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."

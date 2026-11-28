@@ -1,0 +1,13 @@
+supplier_id,supplier_name,supplier_name_normalized,supplier_country,supplier_tax_id_masked,supplier_bank_id_masked
+SUP-001,Northstar Retail,northstarretail,IN,TAX-001,BANK-001
+SUP-002,Greenleaf Industries,greenleafindustries,IN,TAX-002,BANK-002
+SUP-003,Metro Office Solutions,metroofficesolutions,IN,TAX-003,BANK-003
+SUP-004,Prime Electricals,primeelectricals,IN,TAX-004,BANK-004
+SUP-005,Bluewave Logistics,bluewavelogistics,IN,TAX-005,BANK-005
+SUP-006,Apex Cloud Services,apexcloudservices,IN,TAX-006,BANK-006
+SUP-007,Zenith Technologies,zenithtechnologies,IN,TAX-007,BANK-007
+SUP-008,Global Tech Supplies,globaltechsupplies,IN,TAX-008,BANK-008
+SUP-009,Pioneer Business Consulting,pioneerbusinessconsulting,IN,TAX-009,BANK-009
+SUP-010,NovaTech Solutions,novatechsolutions,IN,TAX-010,BANK-010
+SUP-011,Silverline Automation,silverlineautomation,IN,TAX-011,BANK-011
+SUP-012,Redwood Materials,redwoodmaterials,IN,TAX-012,BANK-012

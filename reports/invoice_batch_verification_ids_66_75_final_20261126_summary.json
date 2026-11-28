@@ -1,0 +1,21 @@
+{
+  "total_invoices_checked": 10,
+  "successfully_processed_invoices": 10,
+  "missing_extraction_records": 0,
+  "missing_pdf_files": 0,
+  "invoices_with_missing_mandatory_fields": 0,
+  "missing_mandatory_field_count": 0,
+  "financial_mismatch_invoices": 0,
+  "duplicate_invoice_number_candidate_groups": 1,
+  "duplicate_candidate_invoice_records": 2,
+  "low_confidence_fields": 0,
+  "populated_low_confidence_fields": 0,
+  "optional_fields_not_present": 59,
+  "missing_field_confidence_scores": 0,
+  "other_exceptions": {},
+  "confidence_threshold": 0.7,
+  "amount_tolerance": "0.01",
+  "upload_directory": "D:\\Invoice Data Extraction\\invoice-ai-backend-fastapi\\uploads\\invoices",
+  "report_csv": "D:\\Invoice Data Extraction\\invoice-ai-backend-fastapi\\reports\\invoice_batch_verification_ids_66_75_final_20261126.csv",
+  "exceptions_csv": "D:\\Invoice Data Extraction\\invoice-ai-backend-fastapi\\reports\\invoice_batch_verification_ids_66_75_final_20261126_exceptions.csv"
+}

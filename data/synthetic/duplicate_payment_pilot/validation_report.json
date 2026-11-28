@@ -1,0 +1,865 @@
+{
+  "overall_pass": true,
+  "seed": 20261128,
+  "counts": {
+    "suppliers": 12,
+    "invoices": 36,
+    "payments": 37,
+    "allocations": 37,
+    "pairs": 30,
+    "duplicates": 13,
+    "not_duplicates": 13,
+    "uncertain": 4
+  },
+  "split_counts": {
+    "train": {
+      "pair_count": 10,
+      "label_counts": {
+        "duplicate": 5,
+        "not_duplicate": 4,
+        "uncertain": 1
+      },
+      "supplier_count": 4,
+      "invoice_count": 12,
+      "payment_count": 12
+    },
+    "validation": {
+      "pair_count": 11,
+      "label_counts": {
+        "duplicate": 4,
+        "not_duplicate": 6,
+        "uncertain": 1
+      },
+      "supplier_count": 4,
+      "invoice_count": 12,
+      "payment_count": 13
+    },
+    "test": {
+      "pair_count": 9,
+      "label_counts": {
+        "duplicate": 4,
+        "not_duplicate": 3,
+        "uncertain": 2
+      },
+      "supplier_count": 4,
+      "invoice_count": 11,
+      "payment_count": 11
+    }
+  },
+  "split_overlaps": [],
+  "binary_split_deficiencies": [],
+  "pair_label_results": [
+    {
+      "pair_id": "PAIR-0001",
+      "invoice_ids": [
+        "1",
+        "2"
+      ],
+      "supplier_ids": [
+        "SUP-001",
+        "SUP-001"
+      ],
+      "payment_ids": [
+        "PAY-0001",
+        "PAY-0002"
+      ],
+      "allocation_ids": [
+        "ALLOC-0001",
+        "ALLOC-0002"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-001-DUP",
+        "OBL-001-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0002",
+      "invoice_ids": [
+        "4",
+        "5"
+      ],
+      "supplier_ids": [
+        "SUP-002",
+        "SUP-002"
+      ],
+      "payment_ids": [
+        "PAY-0003",
+        "PAY-0004"
+      ],
+      "allocation_ids": [
+        "ALLOC-0003",
+        "ALLOC-0004"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-002-DUP",
+        "OBL-002-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0003",
+      "invoice_ids": [
+        "7",
+        "8"
+      ],
+      "supplier_ids": [
+        "SUP-003",
+        "SUP-003"
+      ],
+      "payment_ids": [
+        "PAY-0005",
+        "PAY-0006"
+      ],
+      "allocation_ids": [
+        "ALLOC-0005",
+        "ALLOC-0006"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-003-DUP",
+        "OBL-003-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0004",
+      "invoice_ids": [
+        "10",
+        "11"
+      ],
+      "supplier_ids": [
+        "SUP-004",
+        "SUP-004"
+      ],
+      "payment_ids": [
+        "PAY-0007",
+        "PAY-0008"
+      ],
+      "allocation_ids": [
+        "ALLOC-0007",
+        "ALLOC-0008"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-004-DUP",
+        "OBL-004-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0005",
+      "invoice_ids": [
+        "13",
+        "14"
+      ],
+      "supplier_ids": [
+        "SUP-005",
+        "SUP-005"
+      ],
+      "payment_ids": [
+        "PAY-0009",
+        "PAY-0010"
+      ],
+      "allocation_ids": [
+        "ALLOC-0009",
+        "ALLOC-0010"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-005-DUP",
+        "OBL-005-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0006",
+      "invoice_ids": [
+        "16",
+        "17"
+      ],
+      "supplier_ids": [
+        "SUP-006",
+        "SUP-006"
+      ],
+      "payment_ids": [
+        "PAY-0011",
+        "PAY-0012"
+      ],
+      "allocation_ids": [
+        "ALLOC-0011",
+        "ALLOC-0012"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-006-DUP",
+        "OBL-006-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0007",
+      "invoice_ids": [
+        "19",
+        "20"
+      ],
+      "supplier_ids": [
+        "SUP-007",
+        "SUP-007"
+      ],
+      "payment_ids": [
+        "PAY-0013",
+        "PAY-0014"
+      ],
+      "allocation_ids": [
+        "ALLOC-0013",
+        "ALLOC-0014"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-007-DUP",
+        "OBL-007-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0008",
+      "invoice_ids": [
+        "22",
+        "23"
+      ],
+      "supplier_ids": [
+        "SUP-008",
+        "SUP-008"
+      ],
+      "payment_ids": [
+        "PAY-0015",
+        "PAY-0016"
+      ],
+      "allocation_ids": [
+        "ALLOC-0015",
+        "ALLOC-0016"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-008-DUP",
+        "OBL-008-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0009",
+      "invoice_ids": [
+        "25",
+        "26"
+      ],
+      "supplier_ids": [
+        "SUP-009",
+        "SUP-009"
+      ],
+      "payment_ids": [
+        "PAY-0017",
+        "PAY-0018"
+      ],
+      "allocation_ids": [
+        "ALLOC-0017",
+        "ALLOC-0018"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-009-DUP",
+        "OBL-009-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0010",
+      "invoice_ids": [
+        "28",
+        "29"
+      ],
+      "supplier_ids": [
+        "SUP-010",
+        "SUP-010"
+      ],
+      "payment_ids": [
+        "PAY-0019",
+        "PAY-0020"
+      ],
+      "allocation_ids": [
+        "ALLOC-0019",
+        "ALLOC-0020"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-010-DUP",
+        "OBL-010-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0011",
+      "invoice_ids": [
+        "31",
+        "32"
+      ],
+      "supplier_ids": [
+        "SUP-011",
+        "SUP-011"
+      ],
+      "payment_ids": [
+        "PAY-0021",
+        "PAY-0022"
+      ],
+      "allocation_ids": [
+        "ALLOC-0021",
+        "ALLOC-0022"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-011-DUP",
+        "OBL-011-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0012",
+      "invoice_ids": [
+        "34",
+        "35"
+      ],
+      "supplier_ids": [
+        "SUP-012",
+        "SUP-012"
+      ],
+      "payment_ids": [
+        "PAY-0023",
+        "PAY-0024"
+      ],
+      "allocation_ids": [
+        "ALLOC-0023",
+        "ALLOC-0024"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-012-DUP",
+        "OBL-012-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0013",
+      "invoice_ids": [
+        "1",
+        "2"
+      ],
+      "supplier_ids": [
+        "SUP-001",
+        "SUP-001"
+      ],
+      "payment_ids": [
+        "PAY-0001",
+        "PAY-0002"
+      ],
+      "allocation_ids": [
+        "ALLOC-0001",
+        "ALLOC-0002"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-001-DUP",
+        "OBL-001-DUP"
+      ],
+      "stored_label": "duplicate",
+      "derived_label": "duplicate",
+      "reason": "same supplier and obligation; two distinct completed/historical settlements"
+    },
+    {
+      "pair_id": "PAIR-0014",
+      "invoice_ids": [
+        "21",
+        "21"
+      ],
+      "supplier_ids": [
+        "SUP-007",
+        "SUP-007"
+      ],
+      "payment_ids": [
+        "PAY-0036",
+        "PAY-0037"
+      ],
+      "allocation_ids": [
+        "ALLOC-0036",
+        "ALLOC-0037"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-007-DISTINCT",
+        "OBL-007-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "single invoice paid by partial allocations"
+    },
+    {
+      "pair_id": "PAIR-0015",
+      "invoice_ids": [
+        "22",
+        "24"
+      ],
+      "supplier_ids": [
+        "SUP-008",
+        "SUP-008"
+      ],
+      "payment_ids": [
+        "PAY-0015",
+        "PAY-0030"
+      ],
+      "allocation_ids": [
+        "ALLOC-0015",
+        "ALLOC-0030"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-008-DUP",
+        "OBL-008-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0016",
+      "invoice_ids": [
+        "18",
+        "16"
+      ],
+      "supplier_ids": [
+        "SUP-006",
+        "SUP-006"
+      ],
+      "payment_ids": [
+        "PAY-0035",
+        "PAY-0011"
+      ],
+      "allocation_ids": [
+        "ALLOC-0035",
+        "ALLOC-0011"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-006-DISTINCT",
+        "OBL-006-DUP"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0017",
+      "invoice_ids": [
+        "1",
+        "3"
+      ],
+      "supplier_ids": [
+        "SUP-001",
+        "SUP-001"
+      ],
+      "payment_ids": [
+        "PAY-0001",
+        "PAY-0025"
+      ],
+      "allocation_ids": [
+        "ALLOC-0001",
+        "ALLOC-0025"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-001-DUP",
+        "OBL-001-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0018",
+      "invoice_ids": [
+        "4",
+        "6"
+      ],
+      "supplier_ids": [
+        "SUP-002",
+        "SUP-002"
+      ],
+      "payment_ids": [
+        "PAY-0003",
+        "PAY-0026"
+      ],
+      "allocation_ids": [
+        "ALLOC-0003",
+        "ALLOC-0026"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-002-DUP",
+        "OBL-002-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0019",
+      "invoice_ids": [
+        "7",
+        "9"
+      ],
+      "supplier_ids": [
+        "SUP-003",
+        "SUP-003"
+      ],
+      "payment_ids": [
+        "PAY-0005",
+        "PAY-0027"
+      ],
+      "allocation_ids": [
+        "ALLOC-0005",
+        "ALLOC-0027"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-003-DUP",
+        "OBL-003-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0020",
+      "invoice_ids": [
+        "3",
+        "12"
+      ],
+      "supplier_ids": [
+        "SUP-001",
+        "SUP-004"
+      ],
+      "payment_ids": [
+        "PAY-0025",
+        "PAY-0028"
+      ],
+      "allocation_ids": [
+        "ALLOC-0025",
+        "ALLOC-0028"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-001-DISTINCT",
+        "OBL-004-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different suppliers"
+    },
+    {
+      "pair_id": "PAIR-0021",
+      "invoice_ids": [
+        "13",
+        "15"
+      ],
+      "supplier_ids": [
+        "SUP-005",
+        "SUP-005"
+      ],
+      "payment_ids": [
+        "PAY-0009",
+        "PAY-0029"
+      ],
+      "allocation_ids": [
+        "ALLOC-0009",
+        "ALLOC-0029"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-005-DUP",
+        "OBL-005-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0022",
+      "invoice_ids": [
+        "31",
+        "33"
+      ],
+      "supplier_ids": [
+        "SUP-011",
+        "SUP-011"
+      ],
+      "payment_ids": [
+        "PAY-0021",
+        "PAY-0033"
+      ],
+      "allocation_ids": [
+        "ALLOC-0021",
+        "ALLOC-0033"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-011-DUP",
+        "OBL-011-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0023",
+      "invoice_ids": [
+        "34",
+        "36"
+      ],
+      "supplier_ids": [
+        "SUP-012",
+        "SUP-012"
+      ],
+      "payment_ids": [
+        "PAY-0023",
+        "PAY-0034"
+      ],
+      "allocation_ids": [
+        "ALLOC-0023",
+        "ALLOC-0034"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-012-DUP",
+        "OBL-012-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0024",
+      "invoice_ids": [
+        "19",
+        "21"
+      ],
+      "supplier_ids": [
+        "SUP-007",
+        "SUP-007"
+      ],
+      "payment_ids": [
+        "PAY-0013",
+        "PAY-0036"
+      ],
+      "allocation_ids": [
+        "ALLOC-0013",
+        "ALLOC-0036"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-007-DUP",
+        "OBL-007-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0025",
+      "invoice_ids": [
+        "22",
+        "24"
+      ],
+      "supplier_ids": [
+        "SUP-008",
+        "SUP-008"
+      ],
+      "payment_ids": [
+        "PAY-0015",
+        "PAY-0030"
+      ],
+      "allocation_ids": [
+        "ALLOC-0015",
+        "ALLOC-0030"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-008-DUP",
+        "OBL-008-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "different underlying obligations"
+    },
+    {
+      "pair_id": "PAIR-0026",
+      "invoice_ids": [
+        "27",
+        "27"
+      ],
+      "supplier_ids": [
+        "SUP-009",
+        "SUP-009"
+      ],
+      "payment_ids": [
+        "PAY-0031",
+        "PAY-0031"
+      ],
+      "allocation_ids": [
+        "ALLOC-0031",
+        "ALLOC-0031"
+      ],
+      "underlying_obligation_ids": [
+        "OBL-009-DISTINCT",
+        "OBL-009-DISTINCT"
+      ],
+      "stored_label": "not_duplicate",
+      "derived_label": "not_duplicate",
+      "reason": "single invoice paid by partial allocations"
+    },
+    {
+      "pair_id": "PAIR-0027",
+      "invoice_ids": [
+        "25",
+        "26"
+      ],
+      "supplier_ids": [
+        "SUP-009",
+        "SUP-009"
+      ],
+      "payment_ids": [
+        null,
+        null
+      ],
+      "allocation_ids": [
+        null,
+        null
+      ],
+      "underlying_obligation_ids": [
+        "OBL-009-DUP",
+        "OBL-009-DUP"
+      ],
+      "stored_label": "uncertain",
+      "derived_label": "uncertain",
+      "reason": "missing payment or allocation evidence"
+    },
+    {
+      "pair_id": "PAIR-0028",
+      "invoice_ids": [
+        "31",
+        "33"
+      ],
+      "supplier_ids": [
+        "SUP-011",
+        "SUP-011"
+      ],
+      "payment_ids": [
+        null,
+        null
+      ],
+      "allocation_ids": [
+        null,
+        null
+      ],
+      "underlying_obligation_ids": [
+        "OBL-011-DUP",
+        "OBL-011-DISTINCT"
+      ],
+      "stored_label": "uncertain",
+      "derived_label": "uncertain",
+      "reason": "missing payment or allocation evidence"
+    },
+    {
+      "pair_id": "PAIR-0029",
+      "invoice_ids": [
+        "10",
+        "12"
+      ],
+      "supplier_ids": [
+        "SUP-004",
+        "SUP-004"
+      ],
+      "payment_ids": [
+        null,
+        null
+      ],
+      "allocation_ids": [
+        null,
+        null
+      ],
+      "underlying_obligation_ids": [
+        "OBL-004-DUP",
+        "OBL-004-DISTINCT"
+      ],
+      "stored_label": "uncertain",
+      "derived_label": "uncertain",
+      "reason": "missing payment or allocation evidence"
+    },
+    {
+      "pair_id": "PAIR-0030",
+      "invoice_ids": [
+        "13",
+        "14"
+      ],
+      "supplier_ids": [
+        "SUP-005",
+        "SUP-005"
+      ],
+      "payment_ids": [
+        null,
+        null
+      ],
+      "allocation_ids": [
+        null,
+        null
+      ],
+      "underlying_obligation_ids": [
+        "OBL-005-DUP",
+        "OBL-005-DUP"
+      ],
+      "stored_label": "uncertain",
+      "derived_label": "uncertain",
+      "reason": "missing payment or allocation evidence"
+    }
+  ],
+  "feature_allowlist": [
+    "allocationOverlapRatio",
+    "amountDifference",
+    "amountSimilarity",
+    "currencyMatch",
+    "dateDifferenceDays",
+    "exactAmountMatch",
+    "invoiceNumberOccurrenceCount",
+    "invoiceNumberSimilarity",
+    "paidAmountMatch",
+    "paidAmountSimilarity",
+    "pair_id",
+    "partialPaymentRatio",
+    "paymentReferenceSimilarity",
+    "paymentTermsSimilarity",
+    "reversalStatusMatch",
+    "samePaymentRun",
+    "supplierIdMatch",
+    "vendorInvoiceOccurrenceCount",
+    "vendorOccurrenceCount",
+    "vendorSimilarity"
+  ],
+  "recomputed_feature_mismatches": [],
+  "exceptions": [],
+  "summary": {
+    "entity_integrity_pass": true,
+    "pair_integrity_pass": true,
+    "financial_integrity_pass": true,
+    "scenario_integrity_pass": true,
+    "feature_integrity_pass": true,
+    "split_integrity_pass": true
+  }
+}

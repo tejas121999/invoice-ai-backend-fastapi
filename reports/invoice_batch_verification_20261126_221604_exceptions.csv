@@ -1,0 +1,83 @@
+﻿invoice_id,file_name,exception_type,field,details
+52,f7bb34af-19f3-4aa0-a6b8-c663d85b1e50.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+52,f7bb34af-19f3-4aa0-a6b8-c663d85b1e50.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+52,f7bb34af-19f3-4aa0-a6b8-c663d85b1e50.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+52,f7bb34af-19f3-4aa0-a6b8-c663d85b1e50.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+52,f7bb34af-19f3-4aa0-a6b8-c663d85b1e50.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+52,f7bb34af-19f3-4aa0-a6b8-c663d85b1e50.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+48,5b75b8f4-d4f4-4ab4-9809-d5a10ff53093.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+50,5f300299-3c2d-4bd0-9f60-6e8fd52fcd72.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+50,5f300299-3c2d-4bd0-9f60-6e8fd52fcd72.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+50,5f300299-3c2d-4bd0-9f60-6e8fd52fcd72.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+50,5f300299-3c2d-4bd0-9f60-6e8fd52fcd72.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+50,5f300299-3c2d-4bd0-9f60-6e8fd52fcd72.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+51,1c6e66d9-f64f-44ff-88b9-b1546e98eba7.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+51,1c6e66d9-f64f-44ff-88b9-b1546e98eba7.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+51,1c6e66d9-f64f-44ff-88b9-b1546e98eba7.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+51,1c6e66d9-f64f-44ff-88b9-b1546e98eba7.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+51,1c6e66d9-f64f-44ff-88b9-b1546e98eba7.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+53,dde5f636-92e0-4f6f-896b-05a3afe2d51d.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+53,dde5f636-92e0-4f6f-896b-05a3afe2d51d.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+53,dde5f636-92e0-4f6f-896b-05a3afe2d51d.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+53,dde5f636-92e0-4f6f-896b-05a3afe2d51d.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,processing_status,processingStatus,"Processing status is Uploaded, not Processed or Reviewed."
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_extraction,,No extracted_invoice_data row exists for this invoice.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+55,73037435-f9a6-4ee3-a7ed-a857f274ca65.pdf,missing_mandatory_field,currency,Mandatory field currency is missing.
+54,83b1753c-e1c4-4148-9cdf-f5b994289a74.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+54,83b1753c-e1c4-4148-9cdf-f5b994289a74.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+54,83b1753c-e1c4-4148-9cdf-f5b994289a74.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+54,83b1753c-e1c4-4148-9cdf-f5b994289a74.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+56,e0d929c2-9a9b-457a-bf36-0782d900d735.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+56,e0d929c2-9a9b-457a-bf36-0782d900d735.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+56,e0d929c2-9a9b-457a-bf36-0782d900d735.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+56,e0d929c2-9a9b-457a-bf36-0782d900d735.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+65,14054b9d-c5c4-401c-be12-d14e48639bc3.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+65,14054b9d-c5c4-401c-be12-d14e48639bc3.pdf,missing_mandatory_field,currency,Mandatory field currency is missing.
+65,14054b9d-c5c4-401c-be12-d14e48639bc3.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+57,1cd6cfc1-f130-4123-a836-d1705976858d.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+57,1cd6cfc1-f130-4123-a836-d1705976858d.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+57,1cd6cfc1-f130-4123-a836-d1705976858d.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,processing_status,processingStatus,"Processing status is Uploaded, not Processed or Reviewed."
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_extraction,,No extracted_invoice_data row exists for this invoice.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+58,4a4fc431-1e53-4377-93f6-55d4b2925da3.pdf,missing_mandatory_field,currency,Mandatory field currency is missing.
+59,6f7352b8-cdcb-4b52-80ff-11aa917224c1.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+59,6f7352b8-cdcb-4b52-80ff-11aa917224c1.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+59,6f7352b8-cdcb-4b52-80ff-11aa917224c1.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+59,6f7352b8-cdcb-4b52-80ff-11aa917224c1.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,processing_status,processingStatus,"Processing status is Uploaded, not Processed or Reviewed."
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_extraction,,No extracted_invoice_data row exists for this invoice.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,subtotal,Mandatory field subtotal is missing.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,total_amount,Mandatory field totalAmount is missing.
+61,299a0772-9d1b-409e-8b51-4f3cea82d15b.pdf,missing_mandatory_field,currency,Mandatory field currency is missing.
+62,53e4cd17-17a5-4ca6-9de3-33042368d4db.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+62,53e4cd17-17a5-4ca6-9de3-33042368d4db.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+62,53e4cd17-17a5-4ca6-9de3-33042368d4db.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+60,aebc6887-f4ef-49c3-a2c9-9335aedbc7fc.pdf,low_confidence,vendorName,Confidence 0.650 is below threshold 0.700.
+60,aebc6887-f4ef-49c3-a2c9-9335aedbc7fc.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+64,7d937e1d-a567-4629-98ca-b316d75102ab.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+63,68d28e4b-406d-48e0-9487-173ed356ce8d.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+69,b41f9d56-1243-433b-b53a-80a6f3004b45.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+70,8f572a2d-1b64-4bf2-85a1-851cb2c142a7.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+74,6db4b902-2a25-46c8-9dd6-3b0c66b1ffb0.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+74,6db4b902-2a25-46c8-9dd6-3b0c66b1ffb0.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+74,6db4b902-2a25-46c8-9dd6-3b0c66b1ffb0.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+71,2c7ec3a3-3170-421e-b6a8-858cb50a8e0d.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+71,2c7ec3a3-3170-421e-b6a8-858cb50a8e0d.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+73,d56eaeff-8bc9-4944-9bca-0cb1c3705845.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+73,d56eaeff-8bc9-4944-9bca-0cb1c3705845.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.

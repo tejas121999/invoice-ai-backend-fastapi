@@ -1,0 +1,37 @@
+invoice_id,supplier_id,source_document_id,invoice_number,vendor_name,vendor_name_reviewed,invoice_date,due_date,subtotal,tax_amount,total_amount,currency,payment_terms,po_number,is_reviewed,ocr_confidence,invoice_status
+1,SUP-001,synthetic-invoice-001.pdf,INV-0001-A,Northstar Retail,Northstar Retail,2026-01-03,2026-01-18,82000.00,18000.00,100000.00,INR,Net 15 Days,PO-0001,true,0.95,Reviewed
+2,SUP-001,synthetic-invoice-002.pdf,INV-0001/A,Northstar Retail,Northstar Retail,2026-01-05,2026-01-20,82000.00,18000.00,100000.00,INR,Net 15 Days,PO-0002,true,0.95,Reviewed
+3,SUP-001,synthetic-invoice-003.pdf,DIST-0001,Northstar Retail,Northstar Retail,2026-01-07,2026-01-22,82410.00,18090.00,100500.00,INR,Net 15 Days,PO-0003,true,0.95,Reviewed
+4,SUP-002,synthetic-invoice-004.pdf,INV-0002-A,Greenleaf Industries,Greenleaf Industries,2026-01-09,2026-01-24,72570.00,15930.00,88500.00,INR,Net 15 Days,PO-0004,true,0.95,Reviewed
+5,SUP-002,synthetic-invoice-005.pdf,INV-0002/A,Greenleaf Industries,Greenleaf Industries,2026-01-11,2026-01-26,72570.00,15930.00,88500.00,INR,Net 15 Days,PO-0005,true,0.95,Reviewed
+6,SUP-002,synthetic-invoice-006.pdf,DIST-0002,Greenleaf Industries,Greenleaf Industries,2026-01-13,2026-01-28,72980.00,16020.00,89000.00,INR,Net 15 Days,PO-0006,true,0.95,Reviewed
+7,SUP-003,synthetic-invoice-007.pdf,INV-0003-A,Metro Office Solutions,Metro Office Solutions,2026-01-15,2026-01-30,60680.00,13320.00,74000.00,INR,Net 15 Days,PO-0007,true,0.95,Reviewed
+8,SUP-003,synthetic-invoice-008.pdf,INV-0003/A,Metro Office Solutions,Metro Office Solutions,2026-01-17,2026-02-01,60680.00,13320.00,74000.00,INR,Net 15 Days,PO-0008,true,0.95,Reviewed
+9,SUP-003,synthetic-invoice-009.pdf,DIST-0003,Metro Office Solutions,Metro Office Solutions,2026-01-19,2026-02-03,61090.00,13410.00,74500.00,INR,Net 15 Days,PO-0009,true,0.95,Reviewed
+10,SUP-004,synthetic-invoice-010.pdf,INV-0004-A,Prime Electricals,Prime Electricals,2026-01-21,2026-02-05,39360.00,8640.00,48000.00,INR,Net 15 Days,PO-0010,true,0.95,Reviewed
+11,SUP-004,synthetic-invoice-011.pdf,INV-0004/A,Prime Electricals,Prime Electricals,2026-01-23,2026-02-07,39360.00,8640.00,48000.00,INR,Net 15 Days,PO-0011,true,0.95,Reviewed
+12,SUP-004,synthetic-invoice-012.pdf,DIST-0004,Prime Electricals,Prime Electricals,2026-01-25,2026-02-09,39770.00,8730.00,48500.00,INR,Net 15 Days,PO-0012,true,0.95,Reviewed
+13,SUP-005,synthetic-invoice-013.pdf,INV-0005-A,Bluewave Logistics,Bluewave Logistics,2026-01-27,2026-02-11,21730.00,4770.00,26500.00,INR,Net 15 Days,PO-0013,true,0.95,Reviewed
+14,SUP-005,synthetic-invoice-014.pdf,INV-0005/A,Bluewave Logistics,Bluewave Logistics,2026-01-29,2026-02-13,21730.00,4770.00,26500.00,INR,Net 15 Days,PO-0014,true,0.95,Reviewed
+15,SUP-005,synthetic-invoice-015.pdf,DIST-0005,Bluewave Logistics,Bluewave Logistics,2026-01-31,2026-02-15,22140.00,4860.00,27000.00,INR,Net 15 Days,PO-0015,true,0.95,Reviewed
+16,SUP-006,synthetic-invoice-016.pdf,INV-0006-A,Apex Cloud Services,Apex Cloud Services,2026-02-02,2026-02-17,98400.00,21600.00,120000.00,INR,Net 15 Days,PO-0016,true,0.95,Reviewed
+17,SUP-006,synthetic-invoice-017.pdf,INV-0006/A,Apex Cloud Services,Apex Cloud Services,2026-02-04,2026-02-19,98400.00,21600.00,120000.00,INR,Net 15 Days,PO-0017,true,0.95,Reviewed
+18,SUP-006,synthetic-invoice-018.pdf,DIST-0006,Apex Cloud Services,Apex Cloud Services,2026-02-06,2026-02-21,98810.00,21690.00,120500.00,INR,Net 15 Days,PO-0018,true,0.95,Reviewed
+19,SUP-007,synthetic-invoice-019.pdf,INV-0007-A,Zenith Technologies,Zenith Technologies,2026-02-08,2026-02-23,492.00,108.00,600.00,INR,Net 15 Days,PO-0019,true,0.95,Reviewed
+20,SUP-007,synthetic-invoice-020.pdf,INV-0007/A,Zenith Technologies,Zenith Technologies,2026-02-10,2026-02-25,492.00,108.00,600.00,INR,Net 15 Days,PO-0020,true,0.95,Reviewed
+21,SUP-007,synthetic-invoice-021.pdf,DIST-0007,Zenith Technologies,Zenith Technologies,2026-02-12,2026-02-27,492.00,108.00,600.00,INR,Net 15 Days,PO-0021,true,0.95,Reviewed
+22,SUP-008,synthetic-invoice-022.pdf,INV-0008-A,Global Tech Supplies,Global Tech Supplies,2026-02-14,2026-03-01,17220.00,3780.00,21000.00,INR,Net 15 Days,PO-0022,true,0.95,Reviewed
+23,SUP-008,synthetic-invoice-023.pdf,INV-0008/A,Global Tech Supplies,Global Tech Supplies,2026-02-16,2026-03-03,17220.00,3780.00,21000.00,INR,Net 15 Days,PO-0023,true,0.95,Reviewed
+24,SUP-008,synthetic-invoice-024.pdf,DIST-0008,Global Tech Supplies,Global Tech Supplies,2026-02-18,2026-03-05,17630.00,3870.00,21500.00,INR,Net 15 Days,PO-0024,true,0.95,Reviewed
+25,SUP-009,synthetic-invoice-025.pdf,INV-0009-A,Pioneer Business Consulting,Pioneer Business Consulting,2026-02-20,2026-03-07,63550.00,13950.00,77500.00,INR,Net 15 Days,PO-0025,true,0.95,Reviewed
+26,SUP-009,synthetic-invoice-026.pdf,INV-0009/A,Pioneer Business Consulting,Pioneer Business Consulting,2026-02-22,2026-03-09,63550.00,13950.00,77500.00,INR,Net 15 Days,PO-0026,true,0.95,Reviewed
+27,SUP-009,synthetic-invoice-027.pdf,DIST-0009,Pioneer Business Consulting,Pioneer Business Consulting,2026-02-24,2026-03-11,63960.00,14040.00,78000.00,INR,Net 15 Days,PO-0027,true,0.95,Reviewed
+28,SUP-010,synthetic-invoice-028.pdf,INV-0010-A,NovaTech Solutions,NovaTech Solutions,2026-02-26,2026-03-13,34440.00,7560.00,42000.00,INR,Net 15 Days,PO-0028,true,0.95,Reviewed
+29,SUP-010,synthetic-invoice-029.pdf,INV-0010/A,NovaTech Solutions,NovaTech Solutions,2026-02-28,2026-03-15,34440.00,7560.00,42000.00,INR,Net 15 Days,PO-0029,true,0.95,Reviewed
+30,SUP-010,synthetic-invoice-030.pdf,DIST-0010,NovaTech Solutions,NovaTech Solutions,2026-03-02,2026-03-17,34850.00,7650.00,42500.00,INR,Net 15 Days,PO-0030,true,0.95,Reviewed
+31,SUP-011,synthetic-invoice-031.pdf,INV-0011-A,Silverline Automation,Silverline Automation,2026-03-04,2026-03-19,45920.00,10080.00,56000.00,INR,Net 15 Days,PO-0031,true,0.95,Reviewed
+32,SUP-011,synthetic-invoice-032.pdf,INV-0011/A,Silverline Automation,Silverline Automation,2026-03-06,2026-03-21,45920.00,10080.00,56000.00,INR,Net 15 Days,PO-0032,true,0.95,Reviewed
+33,SUP-011,synthetic-invoice-033.pdf,DIST-0011,Silverline Automation,Silverline Automation,2026-03-08,2026-03-23,46330.00,10170.00,56500.00,INR,Net 15 Days,PO-0033,true,0.95,Reviewed
+34,SUP-012,synthetic-invoice-034.pdf,INV-0012-A,Redwood Materials,Redwood Materials,2026-03-10,2026-03-25,25830.00,5670.00,31500.00,INR,Net 15 Days,PO-0034,true,0.95,Reviewed
+35,SUP-012,synthetic-invoice-035.pdf,INV-0012/A,Redwood Materials,Redwood Materials,2026-03-12,2026-03-27,25830.00,5670.00,31500.00,INR,Net 15 Days,PO-0035,true,0.95,Reviewed
+36,SUP-012,synthetic-invoice-036.pdf,DIST-0012,Redwood Materials,Redwood Materials,2026-03-14,2026-03-29,26240.00,5760.00,32000.00,INR,Net 15 Days,PO-0036,true,0.95,Reviewed

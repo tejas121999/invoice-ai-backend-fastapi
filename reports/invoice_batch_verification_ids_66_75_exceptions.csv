@@ -1,0 +1,10 @@
+﻿invoice_id,file_name,exception_type,field,details
+69,b41f9d56-1243-433b-b53a-80a6f3004b45.pdf,missing_mandatory_field,vendor_name,Mandatory field vendorName is missing.
+70,8f572a2d-1b64-4bf2-85a1-851cb2c142a7.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+74,6db4b902-2a25-46c8-9dd6-3b0c66b1ffb0.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+74,6db4b902-2a25-46c8-9dd6-3b0c66b1ffb0.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.
+74,6db4b902-2a25-46c8-9dd6-3b0c66b1ffb0.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+71,2c7ec3a3-3170-421e-b6a8-858cb50a8e0d.pdf,missing_mandatory_field,tax_amount,Mandatory field taxAmount is missing.
+71,2c7ec3a3-3170-421e-b6a8-858cb50a8e0d.pdf,duplicate_invoice_number_candidate,invoiceNumber,"Invoice number repeats across invoice records; this is a candidate, not a confirmed duplicate payment."
+73,d56eaeff-8bc9-4944-9bca-0cb1c3705845.pdf,missing_mandatory_field,invoice_number,Mandatory field invoiceNumber is missing.
+73,d56eaeff-8bc9-4944-9bca-0cb1c3705845.pdf,missing_mandatory_field,invoice_date,Mandatory field invoiceDate is missing.

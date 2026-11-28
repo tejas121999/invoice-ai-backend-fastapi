@@ -5,7 +5,8 @@ from sqlalchemy.orm import Session
 from app.models.invoice import Invoice
 from app.models.extracted_invoice import ExtractedInvoiceData
 from app.utils.invoice_status import InvoiceStatus
-from sqlalchemy import func
+from sqlalchemy import case, distinct, func, literal
+from app.utils.similarity_utils import normalize_text
 
 
 def create_invoice_record(db: Session, file_data: dict, uploadedBy: int | None = None):
@@ -164,15 +165,20 @@ def update_invoice_review(
         return None
 
     reviewed_fields = dict(extracted_data.reviewedFieldsJson or {})
+    fixed_fields = (
+        "invoiceNumber",
+        "vendorName",
+        "invoiceDate",
+        "dueDate",
+        "subtotal",
+        "taxAmount",
+        "totalAmount",
+        "currency"
+    )
     reviewed_fields.update({
-        "invoiceNumber": review_data.get("invoiceNumber"),
-        "vendorName": review_data.get("vendorName"),
-        "invoiceDate": review_data.get("invoiceDate"),
-        "dueDate": review_data.get("dueDate"),
-        "subtotal": review_data.get("subtotal"),
-        "taxAmount": review_data.get("taxAmount"),
-        "totalAmount": review_data.get("totalAmount"),
-        "currency": review_data.get("currency")
+        field_name: review_data[field_name]
+        for field_name in fixed_fields
+        if field_name in review_data
     })
 
     dynamic_fields = (
@@ -203,14 +209,22 @@ def update_invoice_review(
     extracted_data.reviewedBy = reviewed_by
     extracted_data.updatedAt = now
 
-    extracted_data.invoiceNumber = reviewed_fields.get("invoiceNumber")
-    extracted_data.vendorName = reviewed_fields.get("vendorName")
-    extracted_data.invoiceDate = reviewed_fields.get("invoiceDate")
-    extracted_data.dueDate = reviewed_fields.get("dueDate")
-    extracted_data.subtotal = reviewed_fields.get("subtotal")
-    extracted_data.taxAmount = reviewed_fields.get("taxAmount")
-    extracted_data.totalAmount = reviewed_fields.get("totalAmount")
-    extracted_data.currency = reviewed_fields.get("currency")
+    if "invoiceNumber" in review_data:
+        extracted_data.invoiceNumber = review_data["invoiceNumber"]
+    if "vendorName" in review_data:
+        extracted_data.vendorName = review_data["vendorName"]
+    if "invoiceDate" in review_data:
+        extracted_data.invoiceDate = review_data["invoiceDate"]
+    if "dueDate" in review_data:
+        extracted_data.dueDate = review_data["dueDate"]
+    if "subtotal" in review_data:
+        extracted_data.subtotal = review_data["subtotal"]
+    if "taxAmount" in review_data:
+        extracted_data.taxAmount = review_data["taxAmount"]
+    if "totalAmount" in review_data:
+        extracted_data.totalAmount = review_data["totalAmount"]
+    if "currency" in review_data:
+        extracted_data.currency = review_data["currency"]
 
     db.add(extracted_data)
     db.flush()
@@ -269,3 +283,80 @@ def get_feature_candidate_invoices(
         )
         .all()
     )
+
+
+def get_duplicate_frequency_counts(
+    db: Session,
+    current_invoice_id: int,
+    vendor_name: str | None,
+    invoice_number: str | None
+) -> dict[str, int]:
+    normalized_vendor = normalize_text(vendor_name)
+    normalized_invoice_number = normalize_text(invoice_number)
+
+    if not normalized_vendor and not normalized_invoice_number:
+        return {
+            "vendorOccurrenceCount": 0,
+            "invoiceNumberOccurrenceCount": 0,
+            "vendorInvoiceOccurrenceCount": 0
+        }
+
+    vendor_name_expression = func.regexp_replace(
+        func.lower(func.coalesce(ExtractedInvoiceData.vendorName, "")),
+        r"[^a-z0-9]",
+        "",
+        "g"
+    )
+    invoice_number_expression = func.regexp_replace(
+        func.lower(func.coalesce(ExtractedInvoiceData.invoiceNumber, "")),
+        r"[^a-z0-9]",
+        "",
+        "g"
+    )
+
+    vendor_count = (
+        func.count(distinct(case(
+            (vendor_name_expression == normalized_vendor,
+             ExtractedInvoiceData.invoiceId)
+        )))
+        if normalized_vendor
+        else literal(0)
+    )
+    invoice_number_count = (
+        func.count(distinct(case(
+            (invoice_number_expression == normalized_invoice_number,
+             ExtractedInvoiceData.invoiceId)
+        )))
+        if normalized_invoice_number
+        else literal(0)
+    )
+    vendor_invoice_count = (
+        func.count(distinct(case(
+            (
+                (vendor_name_expression == normalized_vendor)
+                & (invoice_number_expression == normalized_invoice_number),
+                ExtractedInvoiceData.invoiceId
+            )
+        )))
+        if normalized_vendor and normalized_invoice_number
+        else literal(0)
+    )
+
+    counts = (
+        db.query(
+            vendor_count,
+            invoice_number_count,
+            vendor_invoice_count
+        )
+        .filter(
+            ExtractedInvoiceData.invoiceId != current_invoice_id,
+            ExtractedInvoiceData.isReviewed.is_(True)
+        )
+        .one()
+    )
+
+    return {
+        "vendorOccurrenceCount": counts[0],
+        "invoiceNumberOccurrenceCount": counts[1],
+        "vendorInvoiceOccurrenceCount": counts[2]
+    }

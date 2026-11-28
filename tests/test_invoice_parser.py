@@ -115,6 +115,74 @@ Subtotal 70,000.00
 Tax Amount (18%) 12,600.00
 Total Amount 82,600.00"""
 
+ZENITH_INVOICE_TEXT = """ZENITH TECHNOLOGIES PRIVATE                           TAX INVOICE
+             LIMITED
+
+Subtotal / Taxable Value                                                          I 97,000.00
+
+CGST (9%)                                                                  I 8,730.00
+
+SGST (9%)                                                                  I 8,730.00
+
+<b>GRAND TOTAL / AMOUNT PAYABLE</b>                                               <b>I 1,14,460.00</b>
+
+<b>Payment Terms:</b> Net 15 Days"""
+
+ZENITH_API_RAW_TEXT = """[Page 1]
+ZENITH TECHNOLOGIES PRIVATE                           TAX INVOICE
+             LIMITED
+
+  IT Hardware & Technology Solutions | Mumbai, Maharashtra, India                  INVOICE NO.<br/><b>ZT/2026/0891</b>
+
+
+
+   INVOICE DATE                        PAYMENT DUE                        PAYMENT STATUS
+
+   05 November 2026                      20 November 2026                       Unpaid
+
+
+  BILL TO
+  <b>Pioneer Business Consulting Pvt. Ltd.</b><br/>Andheri East, Mumbai, Maharashtra
+
+ ITEMS / SERVICES
+
+   DESCRIPTION                                   QUANTITY           UNIT RATE (INR)         AMOUNT (INR)
+
+    Dell Business Laptop                             2                   45,000.00                90,000.00
+
+    Wireless Keyboard & Mouse                       2                   1,500.00                 3,000.00
+
+   Laptop Docking Station                           1                   4,000.00                 4,000.00
+
+
+Subtotal / Taxable Value                                                          I 97,000.00
+
+CGST (9%)                                                                  I 8,730.00
+
+SGST (9%)                                                                  I 8,730.00
+
+<b>GRAND TOTAL / AMOUNT PAYABLE</b>                                               <b>I 1,14,460.00</b>
+
+  <b>Amount in Words:</b> One Lakh Fourteen Thousand Four Hundred Sixty Rupees Only.
+  <b>Payment Terms:</b> Net 15 Days &nbsp;&nbsp; <b>Status:</b> Unpaid
+
+
+E-SIGNATURE / APPROVAL
+
+                                                                                          DIGITALLY APPROVEDAarav Mehta
+Authorized Signatory                                                                 Electronic signature – sample only
+Signed electronically for ZENITH TECHNOLOGIES PRIVATE LIMITED             Date: 05 November 2026
+
+  This electronic signature is a decorative synthetic sample for document-processing research. It is not a verified identity or legally authenticated digital
+   signature.
+  Thank you for your business.
+
+
+
+
+
+SYNTHETIC SAMPLE DOCUMENT — NOT A VALID TAX INVOICE                                                        ZT/2026/0891  | Page 1"""
+
 
 class InvoiceParserRegressionTests(unittest.TestCase):
     def test_invoice_57_two_column_number_and_unidentified_vendor(self):
@@ -169,6 +237,173 @@ Total Amount: 11800.00"""
                     f"Invoice Number: {value}"
                 )["fields"]
                 self.assertEqual(fields["invoiceNumber"], value)
+
+    def test_invoice_number_fallback_does_not_match_invoice_title(self):
+        fields = parse_invoice_fields("TAX INVOICE")["fields"]
+
+        self.assertIsNone(fields["invoiceNumber"])
+
+    def test_footer_invoice_number_format_is_extracted(self):
+        self.assertEqual(
+            parse_invoice_fields(
+                "BWL-FRT-26091 | Page 1"
+            )["fields"]["invoiceNumber"],
+            "BWL-FRT-26091"
+        )
+
+    def test_synthetic_warning_footer_invoice_number_is_extracted(self):
+        footer = (
+            "SYNTHETIC SAMPLE DOCUMENT — NOT A VALID TAX INVOICE"
+            "                                                "
+            "BWL-FRT-26091  | Page 1"
+        )
+
+        self.assertEqual(
+            parse_invoice_fields(footer)["fields"]["invoiceNumber"],
+            "BWL-FRT-26091"
+        )
+
+    def test_unrelated_footer_text_is_not_an_invoice_number(self):
+        cases = (
+            "Thank you for your business | Page 1",
+            "REFERENCE: BWL-FRT-26091 | Page 1",
+            "Page 1"
+        )
+
+        for text in cases:
+            with self.subTest(text=text):
+                self.assertIsNone(
+                    parse_invoice_fields(text)["fields"]["invoiceNumber"]
+                )
+
+    def test_explicit_invoice_number_takes_priority_over_footer(self):
+        fields = parse_invoice_fields(
+            "Invoice Number: ZT/2026/0891\n"
+            "BWL-FRT-26091 | Page 1"
+        )["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "ZT/2026/0891")
+
+    def test_legitimate_vendor_name_containing_tax_invoice_is_preserved(self):
+        fields = parse_invoice_fields(
+            "Vendor Name: Tax Invoice Solutions Limited"
+        )["fields"]
+
+        self.assertEqual(
+            fields["vendorName"],
+            "Tax Invoice Solutions Limited"
+        )
+
+    def test_company_name_excludes_trailing_service_invoice_title(self):
+        fields = parse_invoice_fields(
+            "APEX CLOUD SERVICES LLP                            SERVICE INVOICE"
+        )["fields"]
+
+        self.assertEqual(
+            fields["vendorName"],
+            "APEX CLOUD SERVICES LLP"
+        )
+
+    def test_legitimate_company_name_containing_service_invoice_is_preserved(
+        self
+    ):
+        fields = parse_invoice_fields(
+            "Vendor Name: Service Invoice Technologies LLP"
+        )["fields"]
+
+        self.assertEqual(
+            fields["vendorName"],
+            "Service Invoice Technologies LLP"
+        )
+
+    def test_company_name_excludes_gst_sales_invoice_title(self):
+        fields = parse_invoice_fields(
+            "GREENLEAF INDUSTRIES GST SALES INVOICE"
+        )["fields"]
+
+        self.assertEqual(fields["vendorName"], "GREENLEAF INDUSTRIES")
+
+    def test_company_name_excludes_commercial_tax_invoice_title(self):
+        text = """METRO OFFICE SOLUTIONS PVT.                COMMERCIAL TAX INVOICE
+               LTD."""
+
+        self.assertEqual(
+            parse_invoice_fields(text)["fields"]["vendorName"],
+            "METRO OFFICE SOLUTIONS PVT. LTD."
+        )
+
+    def test_legitimate_company_names_similar_to_invoice_titles_are_preserved(
+        self
+    ):
+        for name in (
+            "GST Sales Invoice Limited",
+            "Commercial Tax Invoice Ltd.",
+            "GST Sales Services Limited",
+            "Commercial Tax Services Limited"
+        ):
+            with self.subTest(name=name):
+                self.assertEqual(
+                    parse_invoice_fields(
+                        f"Vendor Name: {name}"
+                    )["fields"]["vendorName"],
+                    name
+                )
+
+    def test_invoice_number_precedes_inline_date_on_same_line(self):
+        cases = (
+            (
+                "BILL / INVOICE NO.: <b>PE/26/778</b> "
+                "DATE: <b>18 November 2026</b>",
+                "PE/26/778",
+                "2026-11-18"
+            ),
+            (
+                "BILL / INVOICE NO.: <b>PE-26-778</b> "
+                "DATE: <b>18/11/2026</b>",
+                "PE-26-778",
+                "2026-11-18"
+            )
+        )
+
+        for text, expected_number, expected_date in cases:
+            with self.subTest(text=text):
+                fields = parse_invoice_fields(text)["fields"]
+                self.assertEqual(fields["invoiceNumber"], expected_number)
+                self.assertEqual(fields["invoiceDate"], expected_date)
+
+    def test_invoice_number_followed_only_by_payment_due_date(self):
+        fields = parse_invoice_fields(
+            "Invoice Number: INV-77 "
+            "Payment Due Date: 29 November 2026"
+        )["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "INV-77")
+        self.assertIsNone(fields["invoiceDate"])
+        self.assertEqual(fields["dueDate"], "2026-11-29")
+
+    def test_inline_invoice_date_and_payment_due_are_extracted_independently(
+        self
+    ):
+        fields = parse_invoice_fields(
+            "BILL / INVOICE NO.: PE/26/778 "
+            "DATE: 18 November 2026 PAYMENT DUE: 29 November 2026"
+        )["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "PE/26/778")
+        self.assertEqual(fields["invoiceDate"], "2026-11-18")
+        self.assertEqual(fields["dueDate"], "2026-11-29")
+
+    def test_explicit_invoice_date_and_payment_due_are_extracted_separately(
+        self
+    ):
+        fields = parse_invoice_fields(
+            "Invoice Number: INV-77\n"
+            "Invoice Date: 18 November 2026\n"
+            "Payment Due Date: 29 November 2026"
+        )["fields"]
+
+        self.assertEqual(fields["invoiceDate"], "2026-11-18")
+        self.assertEqual(fields["dueDate"], "2026-11-29")
 
     def test_adjacent_invoice_label_is_not_part_of_invoice_number(self):
         fields = parse_invoice_fields(
@@ -249,7 +484,9 @@ Invoice Date
         for title in (
             "INVOICE",
             "FREELANCE INVOICE",
+            "SERVICE INVOICE",
             "TAX INVOICE",
+            "FREIGHT & LOGISTICS INVOICE",
             "TWO-PAGE TEST INVOICE",
             "BILL"
         ):
@@ -257,6 +494,40 @@ Invoice Date
                 self.assertIsNone(
                     parse_invoice_fields(title)["fields"]["vendorName"]
                 )
+
+    def test_repeated_short_vendor_name_prefers_extended_brand_line(self):
+        text = """[Page 1]
+BLUEWAVE
+BLUEWAVE LOGISTICS — Transportation | Cargo | Warehousing | Navi Mumbai, Maharashtra, India
+FREIGHT & LOGISTICS INVOICE
+
+SYNTHETIC SAMPLE DOCUMENT — NOT A VALID TAX INVOICE                                                BWL-FRT-26091  | Page 1"""
+
+        fields = parse_invoice_fields(text)["fields"]
+        self.assertEqual(fields["vendorName"], "BLUEWAVE LOGISTICS")
+        self.assertEqual(fields["invoiceNumber"], "BWL-FRT-26091")
+
+    def test_standalone_one_word_vendor_name_is_preserved(self):
+        self.assertEqual(
+            parse_invoice_fields("Bluewave")["fields"]["vendorName"],
+            "Bluewave"
+        )
+
+    def test_zenith_api_raw_text_preserves_all_verified_fields(self):
+        fields = parse_invoice_fields(ZENITH_API_RAW_TEXT)["fields"]
+
+        self.assertEqual(fields["invoiceNumber"], "ZT/2026/0891")
+        self.assertEqual(
+            fields["vendorName"],
+            "ZENITH TECHNOLOGIES PRIVATE LIMITED"
+        )
+        self.assertEqual(fields["invoiceDate"], "2026-11-05")
+        self.assertEqual(fields["dueDate"], "2026-11-20")
+        self.assertEqual(fields["subtotal"], 97000.0)
+        self.assertEqual(fields["taxAmount"], 17460.0)
+        self.assertEqual(fields["totalAmount"], 114460.0)
+        self.assertEqual(fields["currency"], "INR")
+        self.assertEqual(fields["paymentTerms"], "Net 15 Days")
 
     def test_tax_labels_with_percentages_are_extracted(self):
         cases = (
@@ -273,6 +544,23 @@ Invoice Date
                 result = parse_invoice_fields(line)
                 self.assertEqual(result["fields"]["taxAmount"], 12600.0)
                 self.assertGreater(result["confidence"]["taxAmount"], 0.0)
+
+    def test_central_and_state_gst_components_are_summed(self):
+        text = """Central GST @ 9% I 4,320.00
+State GST @ 9% I 4,320.00"""
+
+        result = parse_invoice_fields(text)
+
+        self.assertEqual(result["fields"]["taxAmount"], 8640.0)
+        self.assertGreater(result["confidence"]["taxAmount"], 0.0)
+
+    def test_gst_with_percent_word_is_extracted(self):
+        result = parse_invoice_fields(
+            "GST @ 18 Percent I 4,770.00"
+        )
+
+        self.assertEqual(result["fields"]["taxAmount"], 4770.0)
+        self.assertGreater(result["confidence"]["taxAmount"], 0.0)
 
     def test_all_dynamic_fields_are_extracted_with_matching_confidence(self):
         text = """Invoice Number: NT-2026-2045
@@ -348,6 +636,38 @@ Payment Reference: PAY-REF-2026-88"""
                 self.assertEqual(result["fields"][field_name], expected)
                 self.assertGreater(result["confidence"][field_name], 0.0)
 
+    def test_payment_terms_stop_at_status_on_same_line(self):
+        fields = parse_invoice_fields(
+            "Payment Terms: Net 15 Days Status: Unpaid"
+        )["fields"]
+
+        self.assertEqual(fields["paymentTerms"], "Net 15 Days")
+
+    def test_payment_terms_preserve_multiword_value(self):
+        fields = parse_invoice_fields(
+            "Payment Terms: Net 15 Days"
+        )["fields"]
+
+        self.assertEqual(fields["paymentTerms"], "Net 15 Days")
+
+    def test_payment_terms_stop_at_status_after_html_entities(self):
+        fields = parse_invoice_fields(
+            "Payment Terms: Net 15 Days&nbsp;&nbsp;Status: Unpaid"
+        )["fields"]
+
+        self.assertEqual(fields["paymentTerms"], "Net 15 Days")
+
+    def test_existing_payment_terms_label_variations_are_preserved(self):
+        cases = (
+            ("Payment Terms: Net 30 days", "Net 30 days"),
+            ("Terms of Payment: Due on receipt", "Due on receipt")
+        )
+
+        for text, expected in cases:
+            with self.subTest(text=text):
+                fields = parse_invoice_fields(text)["fields"]
+                self.assertEqual(fields["paymentTerms"], expected)
+
     def test_gst_label_variations_are_extracted(self):
         gst_number = "27ABCDE1234F1Z5"
 
@@ -399,6 +719,27 @@ Total Amount: 82,600.00"""
 
         self.assertEqual(fields["taxAmount"], 12600.0)
         self.assertEqual(fields["totalAmount"], 82600.0)
+
+    def test_tax_components_with_parenthesized_percentages_are_summed(self):
+        text = """CGST (9%): I 8,730.00
+SGST (9%): I 8,730.00"""
+
+        fields = parse_invoice_fields(text)["fields"]
+
+        self.assertEqual(fields["taxAmount"], 17460.0)
+
+    def test_exact_zenith_invoice_text_extracts_vendor_and_amounts(self):
+        fields = parse_invoice_fields(ZENITH_INVOICE_TEXT)["fields"]
+
+        self.assertEqual(
+            fields["vendorName"],
+            "ZENITH TECHNOLOGIES PRIVATE LIMITED"
+        )
+        self.assertEqual(fields["subtotal"], 97000.0)
+        self.assertEqual(fields["taxAmount"], 17460.0)
+        self.assertEqual(fields["totalAmount"], 114460.0)
+        self.assertEqual(fields["currency"], "INR")
+        self.assertEqual(fields["paymentTerms"], "Net 15 Days")
 
     def test_missing_tax_is_not_calculated_from_subtotal_and_total(self):
         result = parse_invoice_fields(

@@ -11,6 +11,14 @@ class InvoiceComparisonFeatures(BaseModel):
 
     dateDifferenceDays: int | None = None
     currencyMatch: bool
+    paymentTermsSimilarity: float | None = Field(
+        default=None,
+        ge=0,
+        le=1
+    )
+    vendorOccurrenceCount: int = Field(ge=0)
+    invoiceNumberOccurrenceCount: int = Field(ge=0)
+    vendorInvoiceOccurrenceCount: int = Field(ge=0)
 
 
 class InvoiceFeatureComparison(BaseModel):

@@ -1,3 +1,4 @@
+import html
 import re
 from datetime import date
 from decimal import Decimal, InvalidOperation
@@ -8,7 +9,7 @@ from dateutil import parser as date_parser
 
 INVOICE_NUMBER_PATTERNS = [
     r"\binvoice\s*(?:number|no\.?|#)\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-\/]+)",
-    r"\binv\s*(?:number|no\.?|#)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-\/]+)",
+    r"\binv(?![a-z])\s*(?:number|no\.?|#)?\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-\/]+)",
     r"\bbill\s*(?:number|no\.?|#)\s*[:\-]?\s*([A-Z0-9][A-Z0-9\-\/]+)"
 ]
 
@@ -33,53 +34,55 @@ DATE_TOKEN_PATTERN = (
 )
 
 SUBTOTAL_PATTERNS = [
-    r"\bsub\s*total\s*[:\-]?\s*(?:INR|USD|EUR|Rs\.?|₹|\$|€)?\s*([\d,]+(?:\.\d{1,2})?)"
+    r"\b(?:sub\s*total(?:\s*/\s*taxable\s+value)?|taxable\s+value)"
+    r"\s*[:\-]?\s*(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
+    r"([\d,]+(?:\.\d{1,2})?)"
 ]
 
 TOTAL_AMOUNT_PATTERNS = [
     (
         r"\bnet\s+amount\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"\bbill\s+amount\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"\btotal\s+amount\s+due\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
-        r"\bgrand\s+total\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"\bgrand\s+total(?:\s*/\s*amount\s+payable)?\s*[:\-]?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"\bamount\s+payable\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"\bdue\s+amount\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"\bbalance\s+due\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"\btotal\s+amount\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)"
     ),
     (
         r"(?im)^\s*total\s*[:\-]\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)\s*$"
     )
 ]
@@ -168,6 +171,7 @@ ADDITIONAL_FIELD_LABEL_PATTERNS = (
     r"total\s+amount",
     r"grand\s+total",
     r"currency",
+    r"status",
     r"bill\s+to",
     r"ship\s+to",
     r"customer(?:\s+(?:name|address|details|information))?",
@@ -235,7 +239,9 @@ COMPANY_SUFFIX_LINES = {
 GENERIC_VENDOR_TITLES = {
     "invoice",
     "freelance invoice",
+    "service invoice",
     "tax invoice",
+    "freight logistics invoice",
     "two page test invoice",
     "bill"
 }
@@ -427,6 +433,24 @@ def clean_vendor_name(value: str) -> str:
         value
     ).strip()
 
+    cleaned = re.sub(
+        r"(?i)^(.*\b(?:limited|ltd\.?|llp|inc\.?|corporation|corp\.?))"
+        r"\s+"
+        r"(?:service\s+invoice|tax\s+invoice|"
+        r"freight\s*&\s*logistics\s+invoice)\s*$",
+        r"\1",
+        cleaned
+    )
+
+    cleaned = re.sub(
+        r"\b(private|pvt\.?)\s+tax\s+invoice"
+        r"(?=\s+(?:(?:private|pvt\.?)\s+)?(?:limited|ltd\.?)\b)",
+        r"\1",
+        cleaned,
+        flags=re.IGNORECASE
+    )
+    cleaned = re.sub(r"\s+", " ", cleaned).strip()
+
     # Remove fields accidentally appended after vendor name.
     cleaned = re.split(
         r"\b(?:invoice\s*(?:number|no|#)|"
@@ -456,7 +480,10 @@ def is_generic_vendor_title(value: str) -> bool:
 
 
 def normalize_raw_text(raw_text: str) -> str:
-    text = raw_text.replace("\r", "\n")
+    text = html.unescape(raw_text)
+    text = re.sub(r"<[^>]+>", " ", text)
+    text = text.replace("\xa0", " ")
+    text = text.replace("\r", "\n")
     text = re.sub(r"[ \t]+", " ", text)
     text = re.sub(r"\n{3,}", "\n\n", text)
 
@@ -592,6 +619,13 @@ def extract_invoice_number(
             )
 
         for candidate_text, is_inline_value in candidate_texts:
+            candidate_text = re.split(
+                r"\bdate\s*:",
+                candidate_text,
+                maxsplit=1,
+                flags=re.IGNORECASE
+            )[0].strip()
+
             if re.search(
                 DATE_TOKEN_PATTERN,
                 candidate_text,
@@ -671,10 +705,29 @@ def extract_invoice_number(
         return None, 0.0
 
     # Original regex fallback
-    return find_first_pattern(
+    invoice_number, confidence = find_first_pattern(
         text,
         INVOICE_NUMBER_PATTERNS
     )
+    if invoice_number:
+        return invoice_number, confidence
+
+    footer_pattern = re.compile(
+        r"^\s*"
+        r"(?:synthetic\s+sample\s+document\s+—\s+"
+        r"not\s+a\s+valid\s+tax\s+invoice\s+)?"
+        r"(?=[A-Z0-9][A-Z0-9\-\/]*[A-Z])"
+        r"(?=[A-Z0-9][A-Z0-9\-\/]*\d)"
+        r"(?P<invoice_number>[A-Z0-9][A-Z0-9\-\/]{3,})"
+        r"\s*\|\s*page\s+\d+\s*$",
+        re.IGNORECASE
+    )
+    for line in lines:
+        match = footer_pattern.fullmatch(line)
+        if match:
+            return match.group("invoice_number"), 0.80
+
+    return None, 0.0
 
 
 def extract_indirect_tax_total(
@@ -682,10 +735,11 @@ def extract_indirect_tax_total(
 ) -> tuple[float | None, float]:
 
     matches = re.findall(
-        r"\b(?:CGST|SGST|IGST)"
-        r"(?:@\d+(?:\.\d+)?%)?"
+        r"\b(?:CGST|SGST|IGST|CENTRAL\s+GST|STATE\s+GST)"
+        r"(?:\s*(?:@\s*\d+(?:\.\d+)?\s*(?:%|percent)|"
+        r"\(\s*\d+(?:\.\d+)?\s*%\)))?"
         r"\s*[:\-]?\s*"
-        r"(?:INR|Rs\.?|₹)?\s*"
+        r"(?:INR|Rs\.?|₹|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)",
         text,
         flags=re.IGNORECASE
@@ -708,9 +762,12 @@ def extract_indirect_tax_total(
 def extract_tax_amount(
     text: str
 ) -> tuple[float | None, float]:
-    currency = r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?"
+    currency = r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?"
     amount = r"([\d,]+(?:\.\d{1,2})?)"
-    percentage = r"(?:\s*\(\s*\d+(?:\.\d+)?\s*%\s*\))?"
+    percentage = (
+        r"(?:\s*(?:\(\s*\d+(?:\.\d+)?\s*%\s*\)|"
+        r"@\s*\d+(?:\.\d+)?\s*(?:%|percent)))?"
+    )
     direct_patterns = (
         (
             re.compile(
@@ -784,7 +841,9 @@ def extract_tax_amount(
                 return parsed_amount, 0.85
 
     component_pattern = re.compile(
-        r"^(?:cgst|sgst|igst)(?:\s*@?\s*\d+(?:\.\d+)?\s*%)?"
+        r"^(?:cgst|sgst|igst)"
+        r"(?:\s*(?:@\s*\d+(?:\.\d+)?\s*%|"
+        r"\(\s*\d+(?:\.\d+)?\s*%\)))?"
         r"\s*[:\-]?\s*"
         + currency
         + r"\s*"
@@ -822,6 +881,19 @@ def extract_invoice_date(
 
         if parsed:
             return parsed, confidence
+
+    inline_invoice_date_pattern = re.compile(
+        r"\binvoice\s*(?:number|no\.?|#)\s*[:#\-]?.*?"
+        r"(?<!due\s)(?<!due-)(?<!due_)\bdate\s*[:\-]\s*("
+        + DATE_TOKEN_PATTERN + r")",
+        re.IGNORECASE
+    )
+    for line in lines:
+        match = inline_invoice_date_pattern.search(line)
+        if match:
+            parsed = extract_date_token(match.group(1))
+            if parsed:
+                return parsed, 0.90
 
     for index, line in enumerate(lines):
         normalized_line = line.lower()
@@ -916,8 +988,9 @@ def extract_subtotal(
 ) -> tuple[float | None, float]:
 
     matches = re.findall(
-        r"\bsub\s*total\s*[:\-]?\s*"
-        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£)?\s*"
+        r"\b(?:sub\s*total(?:\s*/\s*taxable\s+value)?|taxable\s+value)"
+        r"\s*[:\-]?\s*"
+        r"(?:INR|USD|EUR|GBP|Rs\.?|₹|\$|€|£|I)?\s*"
         r"([\d,]+(?:\.\d{1,2})?)",
         text,
         flags=re.IGNORECASE
@@ -978,7 +1051,7 @@ def extract_total_amount(
                 return amount, 0.70
 
     currency_amount_pattern = (
-        r"(?:[$€£₹]\s*|(?:INR|USD|EUR|GBP|Rs\.?)\s*)"
+        r"(?:[$€£₹]\s*|(?:INR|USD|EUR|GBP|Rs\.?|I)\s*)"
         r"([\d,]+(?:\.\d{1,2})?)"
     )
 
@@ -1017,9 +1090,11 @@ def extract_currency(
 ) -> tuple[str | None, float]:
     normalized = text.upper()
 
-    if "INR" in normalized or "₹" in text or re.search(
-        r"\bRS\.?\s*\d",
-        normalized
+    if (
+        "INR" in normalized
+        or "₹" in text
+        or re.search(r"\bRS\.?\s*\d", normalized)
+        or re.search(r"\bI\s*[\d,]", normalized)
     ):
         return "INR", 0.90
 
@@ -1130,6 +1205,27 @@ def extract_vendor_name(
         if is_generic_vendor_title(line):
             continue
 
+        document_title = re.search(
+            r"\s+(?P<title>gst\s+sales\s+invoice|"
+            r"commercial\s+tax\s+invoice)\s*$",
+            line,
+            flags=re.IGNORECASE
+        )
+        if document_title and index == 0:
+            title_prefix = line[:document_title.start()].rstrip()
+            next_line_is_suffix = (
+                index + 1 < len(header_lines)
+                and header_lines[index + 1].lower() in COMPANY_SUFFIX_LINES
+            )
+            split_company_suffix = (
+                document_title.group("title").lower()
+                == "commercial tax invoice"
+                and next_line_is_suffix
+                and re.search(r"\b(?:pvt\.?|private)$", title_prefix, re.I)
+            )
+            if title_prefix and (not next_line_is_suffix or split_company_suffix):
+                line = title_prefix
+
         if re.search(
             r"\b(?:inv(?:oice)?[\s\-/#]*\d[A-Z0-9\-\/]*|"
             r"invoice\s*(?:number|no\.?)\b)",
@@ -1189,6 +1285,27 @@ def extract_vendor_name(
             maxsplit=1,
             flags=re.IGNORECASE
         )[0]
+
+        if (
+            index + 1 < len(header_lines)
+            and len(candidate.split()) == 1
+            and len(candidate) <= 40
+        ):
+            next_line = header_lines[index + 1].strip()
+            repeated_brand = re.match(
+                rf"^{re.escape(candidate)}\b\s+(.+?)\s*—",
+                next_line,
+                flags=re.IGNORECASE
+            )
+            if repeated_brand:
+                extended_vendor = clean_vendor_name(
+                    f"{candidate} {repeated_brand.group(1)}"
+                )
+                if (
+                    extended_vendor
+                    and not is_generic_vendor_title(extended_vendor)
+                ):
+                    return extended_vendor[:255], 0.85
 
         candidate = clean_vendor_name(candidate)
         if candidate and re.search(r"[A-Za-z]", candidate):

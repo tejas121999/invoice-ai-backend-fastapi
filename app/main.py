@@ -2,7 +2,7 @@ from fastapi import FastAPI, Depends
 from sqlalchemy.orm import Session
 from app.core.database import engine, Base
 from app.core.database import get_db
-from app.routers import invoice_router
+from app.routers import auth_router, invoice_router
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.models import invoice
@@ -28,6 +28,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+app.include_router(auth_router.router)
 app.include_router(invoice_router.router)
 
 

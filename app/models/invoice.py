@@ -1,4 +1,6 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, Text
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, Text
+from sqlalchemy.orm import relationship
+
 from app.core.database import Base
 from datetime import datetime
 
@@ -18,5 +20,25 @@ class Invoice(Base):
     processedAt = Column(DateTime)
     reviewedAt = Column(DateTime)
     rawText = Column(Text)
+    paidAmount = Column(
+        Numeric(14, 2),
+        nullable=False,
+        default=0,
+        server_default="0",
+    )
+    paymentStatus = Column(
+        String(32),
+        nullable=False,
+        default="unpaid",
+        server_default="unpaid",
+    )
+    lastPaymentAt = Column(DateTime)
     createdAt = Column(DateTime, default=datetime.utcnow)
     updatedAt = Column(DateTime, default=datetime.utcnow)
+
+    payments = relationship(
+        "Payment",
+        back_populates="invoice",
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )

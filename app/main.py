@@ -10,6 +10,7 @@ from app.models import extracted_invoice
 from app.models import audit_log
 from app.models import user
 from app.models import invoice_line_item
+from app.models import payment
 
 
 Base.metadata.create_all(bind=engine)

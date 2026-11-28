@@ -1,0 +1,96 @@
+{
+  "binary_records": 26,
+  "uncertain_records_excluded": 4,
+  "feature_columns": [
+    "vendorSimilarity",
+    "invoiceNumberSimilarity",
+    "exactAmountMatch",
+    "amountDifference",
+    "amountSimilarity",
+    "dateDifferenceDays",
+    "currencyMatch",
+    "paymentTermsSimilarity",
+    "paidAmountMatch",
+    "paidAmountSimilarity",
+    "paymentReferenceSimilarity",
+    "samePaymentRun",
+    "partialPaymentRatio"
+  ],
+  "splits": {
+    "train": {
+      "binary_records": 9,
+      "duplicate": 5,
+      "not_duplicate": 4,
+      "missing_values_by_feature": {
+        "vendorSimilarity": 0,
+        "invoiceNumberSimilarity": 0,
+        "exactAmountMatch": 0,
+        "amountDifference": 0,
+        "amountSimilarity": 0,
+        "dateDifferenceDays": 0,
+        "currencyMatch": 0,
+        "paymentTermsSimilarity": 0,
+        "paidAmountMatch": 2,
+        "paidAmountSimilarity": 2,
+        "paymentReferenceSimilarity": 0,
+        "samePaymentRun": 0,
+        "partialPaymentRatio": 2
+      }
+    },
+    "validation": {
+      "binary_records": 10,
+      "duplicate": 4,
+      "not_duplicate": 6,
+      "missing_values_by_feature": {
+        "vendorSimilarity": 0,
+        "invoiceNumberSimilarity": 0,
+        "exactAmountMatch": 0,
+        "amountDifference": 0,
+        "amountSimilarity": 0,
+        "dateDifferenceDays": 0,
+        "currencyMatch": 0,
+        "paymentTermsSimilarity": 0,
+        "paidAmountMatch": 1,
+        "paidAmountSimilarity": 1,
+        "paymentReferenceSimilarity": 0,
+        "samePaymentRun": 0,
+        "partialPaymentRatio": 1
+      }
+    },
+    "test": {
+      "binary_records": 7,
+      "duplicate": 4,
+      "not_duplicate": 3,
+      "missing_values_by_feature": {
+        "vendorSimilarity": 0,
+        "invoiceNumberSimilarity": 0,
+        "exactAmountMatch": 0,
+        "amountDifference": 0,
+        "amountSimilarity": 0,
+        "dateDifferenceDays": 0,
+        "currencyMatch": 0,
+        "paymentTermsSimilarity": 0,
+        "paidAmountMatch": 0,
+        "paidAmountSimilarity": 0,
+        "paymentReferenceSimilarity": 0,
+        "samePaymentRun": 0,
+        "partialPaymentRatio": 0
+      }
+    }
+  },
+  "missing_values_by_feature": {
+    "vendorSimilarity": 0,
+    "invoiceNumberSimilarity": 0,
+    "exactAmountMatch": 0,
+    "amountDifference": 0,
+    "amountSimilarity": 0,
+    "dateDifferenceDays": 0,
+    "currencyMatch": 0,
+    "paymentTermsSimilarity": 0,
+    "paidAmountMatch": 3,
+    "paidAmountSimilarity": 3,
+    "paymentReferenceSimilarity": 0,
+    "samePaymentRun": 0,
+    "partialPaymentRatio": 3
+  }
+}

@@ -1,0 +1,10 @@
+pair_id,label,split_name,vendorSimilarity,invoiceNumberSimilarity,exactAmountMatch,amountDifference,amountSimilarity,dateDifferenceDays,currencyMatch,paymentTermsSimilarity,paidAmountMatch,paidAmountSimilarity,paymentReferenceSimilarity,samePaymentRun,partialPaymentRatio
+PAIR-0001,duplicate,train,1.0,1.0,true,0.00,1.0,2,true,1.0,,,0.875,true,
+PAIR-0002,duplicate,train,1.0,1.0,true,0.00,1.0,2,true,1.0,true,1.0,0.875,true,1.0
+PAIR-0003,duplicate,train,1.0,1.0,true,0.00,1.0,2,true,1.0,true,1.0,0.875,false,1.0
+PAIR-0004,duplicate,train,1.0,1.0,true,0.00,1.0,2,true,1.0,true,1.0,0.875,true,1.0
+PAIR-0013,duplicate,train,1.0,1.0,true,0.00,1.0,2,true,1.0,,,0.875,true,
+PAIR-0017,not_duplicate,train,1.0,0.625,false,500.00,0.995,4,true,1.0,false,0.995,0.75,false,1.0
+PAIR-0018,not_duplicate,train,1.0,0.625,false,500.00,0.9944,4,true,1.0,false,0.9944,0.75,false,1.0
+PAIR-0019,not_duplicate,train,1.0,0.625,false,500.00,0.9933,4,true,1.0,false,0.9933,0.75,false,1.0
+PAIR-0020,not_duplicate,train,0.1935,0.875,false,52000.00,0.4826,18,true,1.0,false,0.4826,0.875,false,1.0

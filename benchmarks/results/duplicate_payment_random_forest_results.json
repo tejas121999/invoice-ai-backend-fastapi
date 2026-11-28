@@ -1,0 +1,563 @@
+{
+  "random_seed": 42,
+  "feature_columns": [
+    "vendorSimilarity",
+    "invoiceNumberSimilarity",
+    "exactAmountMatch",
+    "amountDifference",
+    "amountSimilarity",
+    "dateDifferenceDays",
+    "currencyMatch",
+    "paymentTermsSimilarity",
+    "paidAmountMatch",
+    "paidAmountSimilarity",
+    "paymentReferenceSimilarity",
+    "samePaymentRun",
+    "partialPaymentRatio"
+  ],
+  "train_records": 9,
+  "validation_records": 10,
+  "test_records": 7,
+  "model_selection": {
+    "selection_metric": "validation_duplicate_f1",
+    "evaluated_candidates": 8,
+    "tie_break_order": [
+      "shallower max_depth",
+      "larger min_samples_leaf",
+      "class_weight=None"
+    ],
+    "selected_parameters": {
+      "max_depth": 2,
+      "min_samples_leaf": 3,
+      "class_weight": null,
+      "n_estimators": 100,
+      "min_samples_split": 4,
+      "max_features": "sqrt",
+      "bootstrap": true,
+      "random_state": 42,
+      "n_jobs": 1
+    },
+    "candidates": [
+      {
+        "max_depth": 2,
+        "min_samples_leaf": 2,
+        "class_weight": null,
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 2,
+        "min_samples_leaf": 2,
+        "class_weight": "balanced",
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 2,
+        "min_samples_leaf": 3,
+        "class_weight": null,
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 2,
+        "min_samples_leaf": 3,
+        "class_weight": "balanced",
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 3,
+        "min_samples_leaf": 2,
+        "class_weight": null,
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 3,
+        "min_samples_leaf": 2,
+        "class_weight": "balanced",
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 3,
+        "min_samples_leaf": 3,
+        "class_weight": null,
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      },
+      {
+        "max_depth": 3,
+        "min_samples_leaf": 3,
+        "class_weight": "balanced",
+        "accuracy": 0.8,
+        "precision": 0.6666666666666666,
+        "recall": 1.0,
+        "f1": 0.8,
+        "confusion_matrix": [
+          [
+            4,
+            2
+          ],
+          [
+            0,
+            4
+          ]
+        ],
+        "classification_report": {
+          "not_duplicate": {
+            "precision": 1.0,
+            "recall": 0.6666666666666666,
+            "f1-score": 0.8,
+            "support": 6.0
+          },
+          "duplicate": {
+            "precision": 0.6666666666666666,
+            "recall": 1.0,
+            "f1-score": 0.8,
+            "support": 4.0
+          },
+          "accuracy": 0.8,
+          "macro avg": {
+            "precision": 0.8333333333333333,
+            "recall": 0.8333333333333333,
+            "f1-score": 0.8,
+            "support": 10.0
+          },
+          "weighted avg": {
+            "precision": 0.8666666666666666,
+            "recall": 0.8,
+            "f1-score": 0.8,
+            "support": 10.0
+          }
+        },
+        "roc_auc": 0.8958333333333334,
+        "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+      }
+    ]
+  },
+  "majority_baseline": {
+    "validation": {
+      "strategy": "training_majority_class",
+      "majority_class": "duplicate",
+      "accuracy": 0.4,
+      "precision": 0.4,
+      "recall": 1.0,
+      "f1": 0.5714285714285714,
+      "confusion_matrix": [
+        [
+          0,
+          6
+        ],
+        [
+          0,
+          4
+        ]
+      ]
+    },
+    "test": {
+      "strategy": "training_majority_class",
+      "majority_class": "duplicate",
+      "accuracy": 0.5714285714285714,
+      "precision": 0.5714285714285714,
+      "recall": 1.0,
+      "f1": 0.7272727272727273,
+      "confusion_matrix": [
+        [
+          0,
+          3
+        ],
+        [
+          0,
+          4
+        ]
+      ]
+    }
+  },
+  "random_forest": {
+    "validation": {
+      "accuracy": 0.8,
+      "precision": 0.6666666666666666,
+      "recall": 1.0,
+      "f1": 0.8,
+      "confusion_matrix": [
+        [
+          4,
+          2
+        ],
+        [
+          0,
+          4
+        ]
+      ],
+      "classification_report": {
+        "not_duplicate": {
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.8,
+          "support": 6.0
+        },
+        "duplicate": {
+          "precision": 0.6666666666666666,
+          "recall": 1.0,
+          "f1-score": 0.8,
+          "support": 4.0
+        },
+        "accuracy": 0.8,
+        "macro avg": {
+          "precision": 0.8333333333333333,
+          "recall": 0.8333333333333333,
+          "f1-score": 0.8,
+          "support": 10.0
+        },
+        "weighted avg": {
+          "precision": 0.8666666666666666,
+          "recall": 0.8,
+          "f1-score": 0.8,
+          "support": 10.0
+        }
+      },
+      "roc_auc": 0.8958333333333334,
+      "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+    },
+    "test": {
+      "accuracy": 0.8571428571428571,
+      "precision": 0.8,
+      "recall": 1.0,
+      "f1": 0.8888888888888888,
+      "confusion_matrix": [
+        [
+          2,
+          1
+        ],
+        [
+          0,
+          4
+        ]
+      ],
+      "classification_report": {
+        "not_duplicate": {
+          "precision": 1.0,
+          "recall": 0.6666666666666666,
+          "f1-score": 0.8,
+          "support": 3.0
+        },
+        "duplicate": {
+          "precision": 0.8,
+          "recall": 1.0,
+          "f1-score": 0.8888888888888888,
+          "support": 4.0
+        },
+        "accuracy": 0.8571428571428571,
+        "macro avg": {
+          "precision": 0.9,
+          "recall": 0.8333333333333333,
+          "f1-score": 0.8444444444444444,
+          "support": 7.0
+        },
+        "weighted avg": {
+          "precision": 0.8857142857142858,
+          "recall": 0.8571428571428571,
+          "f1-score": 0.8507936507936508,
+          "support": 7.0
+        }
+      },
+      "roc_auc": 0.7916666666666667,
+      "roc_auc_warning": "ROC-AUC is unstable for this very small evaluation split."
+    }
+  },
+  "limitations": [
+    "The pilot contains only 26 binary examples across 13 features.",
+    "Validation-based hyperparameter selection is unstable on 10 records.",
+    "The test split contains only seven records; ROC-AUC is unstable.",
+    "Metrics are descriptive and do not demonstrate production-level accuracy."
+  ]
+}
